@@ -1,1 +1,11 @@
 rootProject.name = 'GenChat'
+
+// Use local composite build for foundation refactor development.
+includeBuild('../agent-foundation') {
+	dependencySubstitution {
+		substitute module('com.agent.foundation:agent-foundation-bom') using project(':agent-foundation-bom')
+		substitute module('com.agent.foundation:agent-foundation-core') using project(':agent-foundation-core')
+		substitute module('com.agent.foundation:agent-foundation-spring-boot-starter') using project(':agent-foundation-spring-boot-starter')
+	}
+}
+

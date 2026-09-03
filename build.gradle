@@ -8,8 +8,9 @@ group = 'com.genchat'
 version = '1.0.0'
 
 java {
-    sourceCompatibility = '21'
-    targetCompatibility = '21'
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
 }
 
 configurations {
@@ -32,6 +33,10 @@ dependencies {
     implementation 'org.springframework.ai:spring-ai-starter-model-openai'
     implementation 'org.springframework.ai:spring-ai-starter-mcp-client'
     implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
+
+    // Agent foundation
+    implementation platform('com.agent.foundation:agent-foundation-bom:2.0.0-SNAPSHOT')
+    implementation 'com.agent.foundation:agent-foundation-core'
 
     // redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
