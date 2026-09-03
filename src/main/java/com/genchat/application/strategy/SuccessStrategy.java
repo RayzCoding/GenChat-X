@@ -1,16 +1,16 @@
 package com.genchat.application.strategy;
 
+import com.agent.foundation.model.RunnableParams;
 import com.genchat.common.AgentStreamEvent;
 import com.genchat.common.prompts.PptBuilderPrompts;
 import com.genchat.common.utils.JacksonJson;
 import com.genchat.dto.AiPptInst;
 import com.genchat.dto.PptSchema;
 import com.genchat.entity.PptInstStatus;
+import com.genchat.foundation.FoundationReactAgentFactory;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Sinks;
-import reactor.core.scheduler.Schedulers;
 
 @Slf4j
 @Component
@@ -36,13 +36,32 @@ public class SuccessStrategy implements PptStateStrategy {
             prompt = PptBuilderPrompts.getSummaryPrompt(requirement, fileUrl, size);
         }
         var llmResponse = new StringBuilder();
-        var disposable = context.getChatClient().prompt()
-                .messages(new UserMessage(prompt))
-                .stream()
-                .content()
+        var agent = FoundationReactAgentFactory.create(
+                context.getDependencies().chatModel(),
+                context.getTools(),
+                5,
+                0,
+                true);
+        var disposable = agent.streamForEvents(
+                        prompt,
+                        RunnableParams.builder().conversationId(inst.getConversationId()).build())
                 .doOnNext(chunk -> {
-                    sink.tryEmitNext(new AgentStreamEvent.Text(chunk).toJSON());
-                    llmResponse.append(chunk);
+                    if (chunk == null) {
+                        return;
+                    }
+                    if (chunk.type() == com.agent.foundation.model.AgentStreamEvent.Type.REASONING_CONTENT) {
+                        sink.tryEmitNext(new AgentStreamEvent.Thinking(chunk.content()).toJSON());
+                        return;
+                    }
+                    if (chunk.type() == com.agent.foundation.model.AgentStreamEvent.Type.RETRY
+                            || chunk.type() == com.agent.foundation.model.AgentStreamEvent.Type.PAUSED) {
+                        sink.tryEmitNext(new AgentStreamEvent.Thinking(chunk.content() + "\n").toJSON());
+                        return;
+                    }
+                    if (chunk.type() == com.agent.foundation.model.AgentStreamEvent.Type.COMPLETED) {
+                        sink.tryEmitNext(new AgentStreamEvent.Text(chunk.content()).toJSON());
+                        llmResponse.append(chunk.content());
+                    }
                 })
                 .doOnComplete(() -> {
                     updateSession(thinkingBuffer, context, llmResponse);
@@ -56,7 +75,6 @@ public class SuccessStrategy implements PptStateStrategy {
                     context.setModifyMode(false);
                     context.setModifyQuestion(null);
                 })
-                .subscribeOn(Schedulers.boundedElastic())
                 .subscribe();
         context.setDisposable(inst.getConversationId(), disposable);
     }

@@ -33,17 +33,19 @@ public class AgentController {
 
     @GetMapping(value = "/deep/stream", produces = "text/event-stream;charset=UTF-8")
     public Flux<String> deepStream(@RequestParam String question,
+                                   @RequestParam(required = false) String conversationId,
                                    @RequestParam(required = false) String conversationsId) {
-        log.info("Receive question, question: {}, conversationId: {}", question, conversationsId);
+        var resolvedConversationId = StreamRequestValidator.resolveConversationId(conversationId, conversationsId);
+        log.info("Receive question, question: {}, conversationId: {}", question, resolvedConversationId);
         var questionError = StreamRequestValidator.requireQuestionFlux(question);
         if (questionError != null) {
             return questionError;
         }
-        var conversationError = StreamRequestValidator.requireConversationIdFlux(conversationsId);
+        var conversationError = StreamRequestValidator.requireConversationIdFlux(resolvedConversationId);
         if (conversationError != null) {
             return conversationError;
         }
-        return agentFacade.deepStream(question, conversationsId);
+        return agentFacade.deepStream(question, resolvedConversationId);
     }
 
     @GetMapping(value = "/simple/stream", produces = "text/event-stream;charset=UTF-8")
@@ -71,26 +73,30 @@ public class AgentController {
 
     @GetMapping(value = "/ppt/stream", produces = "text/event-stream;charset=UTF-8")
     public Flux<String> pptStream(@RequestParam String question,
+                                  @RequestParam(required = false) String conversationId,
                                   @RequestParam(required = false) String conversationsId) {
-        log.info("Received ppt question, question: {}, conversationId: {}", question, conversationsId);
+        var resolvedConversationId = StreamRequestValidator.resolveConversationId(conversationId, conversationsId);
+        log.info("Received ppt question, question: {}, conversationId: {}", question, resolvedConversationId);
         var error = StreamRequestValidator.requireQuestionFlux(question);
         if (error != null) {
             return error;
         }
-        return agentFacade.pptStream(conversationsId, question);
+        return agentFacade.pptStream(resolvedConversationId, question);
     }
 
     @GetMapping(value = "/skills/stream", produces = "text/event-stream;charset=UTF-8")
     public Flux<String> skillsStream(@RequestParam String question,
+                                     @RequestParam(required = false) String conversationId,
                                      @RequestParam(required = false) String conversationsId,
                                      @RequestParam(required = false) String fileId) {
+        var resolvedConversationId = StreamRequestValidator.resolveConversationId(conversationId, conversationsId);
         log.info("Received skills question, question: {}, conversationId: {}, fileId: {}",
-                question, conversationsId, fileId);
+                question, resolvedConversationId, fileId);
         var error = StreamRequestValidator.requireQuestionFlux(question);
         if (error != null) {
             return error;
         }
-        return agentFacade.skillsStream(conversationsId, question, fileId);
+        return agentFacade.skillsStream(resolvedConversationId, question, fileId);
     }
 
     @GetMapping("/stop")

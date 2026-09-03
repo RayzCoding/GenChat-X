@@ -1,10 +1,11 @@
 package com.genchat.agent.deepresearch;
 
+import com.agent.foundation.model.RunnableParams;
 import com.genchat.application.stream.PersistentChatMemoryLoader;
 import com.genchat.common.prompts.PlanExecutePrompts;
-import com.genchat.common.utils.ThinkTagParser;
 import com.genchat.dto.AiChatSession;
 import com.genchat.agent.deepresearch.model.OverAllState;
+import com.genchat.foundation.FoundationReactAgentFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -14,7 +15,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Sinks;
-import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -62,19 +62,30 @@ public class DeepResearchPreparation {
         messages.addAll(overAllState.getMessages());
 
         var responseBuffer = new StringBuilder();
-        var inThinkHolder = new AtomicBoolean(false);
-        var disposable = deps.chatClient().prompt()
-                .messages(messages)
-                .stream()
-                .content()
+        var agent = FoundationReactAgentFactory.create(
+                deps.chatModel(),
+                deps.tools(),
+                deps.maxRounds(),
+                0,
+                true);
+        var disposable = agent.streamForEvents(
+                        renderMessages(messages),
+                        RunnableParams.builder().conversationId(overAllState.getConversationId()).build())
                 .doOnNext(chunk -> {
-                    var parse = ThinkTagParser.parse(chunk, inThinkHolder.get());
-                    inThinkHolder.set(parse.inThink());
-                    for (var segment : parse.segments()) {
-                        DeepResearchStreams.emitThinking(sink, finished, segment.content());
-                        if (!segment.thinking()) {
-                            responseBuffer.append(segment.content());
-                        }
+                    if (chunk == null) {
+                        return;
+                    }
+                    if (chunk.type() == com.agent.foundation.model.AgentStreamEvent.Type.REASONING_CONTENT) {
+                        DeepResearchStreams.emitThinking(sink, finished, chunk.content());
+                        return;
+                    }
+                    if (chunk.type() == com.agent.foundation.model.AgentStreamEvent.Type.RETRY
+                            || chunk.type() == com.agent.foundation.model.AgentStreamEvent.Type.PAUSED) {
+                        DeepResearchStreams.emitThinking(sink, finished, chunk.content() + "\n");
+                        return;
+                    }
+                    if (chunk.type() == com.agent.foundation.model.AgentStreamEvent.Type.COMPLETED) {
+                        responseBuffer.append(chunk.content());
                     }
                 })
                 .doOnComplete(() -> handleClarificationComplete(sink, responseBuffer, finished, onComplete))
@@ -84,7 +95,6 @@ public class DeepResearchPreparation {
                         sink.tryEmitError(throwable);
                     }
                 })
-                .subscribeOn(Schedulers.boundedElastic())
                 .subscribe();
         ctx.getCompositeDisposable().add(disposable);
     }
@@ -102,21 +112,32 @@ public class DeepResearchPreparation {
             messages.addAll(overAllState.getMessages());
         }
         messages.add(new UserMessage("<original_question>" + overAllState.getQuestion() + "</original_question>"));
-        var topicInThinkHolder = new AtomicBoolean(false);
         var topicBuffer = new StringBuilder();
 
-        var disposable = deps.chatClient().prompt()
-                .messages(messages)
-                .stream()
-                .content()
+        var agent = FoundationReactAgentFactory.create(
+                deps.chatModel(),
+                deps.tools(),
+                deps.maxRounds(),
+                0,
+                true);
+        var disposable = agent.streamForEvents(
+                        renderMessages(messages),
+                        RunnableParams.builder().conversationId(overAllState.getConversationId()).build())
                 .doOnNext(chunk -> {
-                    var parse = ThinkTagParser.parse(chunk, topicInThinkHolder.get());
-                    topicInThinkHolder.set(parse.inThink());
-                    for (var segment : parse.segments()) {
-                        DeepResearchStreams.emitThinking(sink, finished, segment.content());
-                        if (!segment.thinking()) {
-                            topicBuffer.append(segment.content());
-                        }
+                    if (chunk == null) {
+                        return;
+                    }
+                    if (chunk.type() == com.agent.foundation.model.AgentStreamEvent.Type.REASONING_CONTENT) {
+                        DeepResearchStreams.emitThinking(sink, finished, chunk.content());
+                        return;
+                    }
+                    if (chunk.type() == com.agent.foundation.model.AgentStreamEvent.Type.RETRY
+                            || chunk.type() == com.agent.foundation.model.AgentStreamEvent.Type.PAUSED) {
+                        DeepResearchStreams.emitThinking(sink, finished, chunk.content() + "\n");
+                        return;
+                    }
+                    if (chunk.type() == com.agent.foundation.model.AgentStreamEvent.Type.COMPLETED) {
+                        topicBuffer.append(chunk.content());
                     }
                 })
                 .doOnComplete(() -> {
@@ -130,7 +151,6 @@ public class DeepResearchPreparation {
                         sink.tryEmitError(throwable);
                     }
                 })
-                .subscribeOn(Schedulers.boundedElastic())
                 .subscribe();
         ctx.getCompositeDisposable().add(disposable);
     }
@@ -152,5 +172,15 @@ public class DeepResearchPreparation {
         }
         DeepResearchStreams.emitThinking(sink, finished, "✅ Sufficient information and ready to generate a research topic\n");
         onComplete.run();
+    }
+
+    private String renderMessages(java.util.List<Message> messages) {
+        StringBuilder sb = new StringBuilder();
+        for (Message message : messages) {
+            sb.append('[').append(message.getMessageType()).append("]\n")
+                    .append(message.getText() == null ? "" : message.getText())
+                    .append("\n\n");
+        }
+        return sb.toString();
     }
 }

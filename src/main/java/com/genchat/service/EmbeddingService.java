@@ -1,17 +1,14 @@
 package com.genchat.service;
 
 import com.genchat.config.DynamicPgVectorStoreFactory;
+import com.genchat.foundation.FoundationRagQueryExpander;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.rag.Query;
-import org.springframework.ai.rag.preretrieval.query.expansion.MultiQueryExpander;
-import org.springframework.ai.rag.preretrieval.query.transformation.CompressionQueryTransformer;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
@@ -29,7 +26,7 @@ import java.util.stream.Collectors;
 public class EmbeddingService {
     private final EmbeddingModel embeddingModel;
     private final DynamicPgVectorStoreFactory pgVectorStoreFactory;
-    private final ChatModel chatModel;
+    private final FoundationRagQueryExpander ragQueryExpander;
     private PgVectorStore vectorStore;
     private static final int EMBEDDING_BATCH_SIZE = 9;
 
@@ -73,25 +70,8 @@ public class EmbeddingService {
         }
 
         try {
-            var query = Query.builder().text(question).build();
-
-            // 1. Query compression and rewriting
-            var chatClient = ChatClient.builder(chatModel).build();
-            var queryTransformer = CompressionQueryTransformer.builder()
-                    .chatClientBuilder(chatClient.mutate())
-                    .build();
-
-            var compressed = queryTransformer.transform(query);
-            log.info("Compressed query: {}", compressed.text());
-
-            // 2. Query expansion
-            var queryExpander = MultiQueryExpander.builder()
-                    .chatClientBuilder(chatClient.mutate())
-                    .numberOfQueries(3)
-                    .includeOriginal(true)
-                    .build();
-
-            var expandedQueries = queryExpander.expand(compressed);
+            // 1. Query compression and expansion through foundation-side adapter.
+            var expandedQueries = ragQueryExpander.expand(question, 3, true);
             log.info("Expanded queries: {}", expandedQueries);
 
             // 3. Semantic vector search - filter by fileid

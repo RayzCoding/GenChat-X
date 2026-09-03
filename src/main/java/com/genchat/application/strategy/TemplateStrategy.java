@@ -1,18 +1,17 @@
 package com.genchat.application.strategy;
 
+import com.agent.foundation.model.RunnableParams;
 import com.genchat.common.AgentStreamEvent;
 import com.genchat.common.TemplateSelectionResult;
 import com.genchat.common.prompts.PptBuilderPrompts;
 import com.genchat.dto.AiPptInst;
-import com.genchat.dto.AiPptTemplate;
 import com.genchat.entity.PptInstStatus;
+import com.genchat.foundation.FoundationReactAgentFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Sinks;
-
-import java.util.List;
 
 @Slf4j
 @Component
@@ -47,12 +46,21 @@ public class TemplateStrategy implements PptStateStrategy {
             ));
         });
         var templateSelectionPrompt = PptBuilderPrompts.getTemplateSelectionPrompt(requirement, templatesInfo.toString());
+        var converter = new BeanOutputConverter<TemplateSelectionResult>(new ParameterizedTypeReference<>() {
+        });
 
         try {
-            var result = context.getChatClient()
-                    .prompt(templateSelectionPrompt)
-                    .call()
-                    .entity(TemplateSelectionResult.class);
+            var agent = FoundationReactAgentFactory.create(
+                    context.getDependencies().chatModel(),
+                    context.getTools(),
+                    5,
+                    0,
+                    true);
+            var resultText = agent.callForResult(
+                            templateSelectionPrompt + "\n\n" + converter.getFormat(),
+                            RunnableParams.builder().conversationId(inst.getConversationId()).build())
+                    .content();
+            var result = converter.convert(resultText);
             log.info("Template selection result: {}", result);
             inst.setTemplateCode(result.getTemplateCode());
             inst.setStatus(TARGET_STATUS.getCode());

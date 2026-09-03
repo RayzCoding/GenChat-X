@@ -4,7 +4,6 @@ import com.genchat.dto.AiPptInst;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -24,7 +23,6 @@ public class PptStateStrategyContext {
 
     private final PptStrategyDependencies dependencies;
     private final ChatMemory chatMemory;
-    private final ChatClient chatClient;
     private final List<ToolCallback> tools;
     private final Long currentSessionId;
     private String modifyQuestion;
@@ -32,22 +30,19 @@ public class PptStateStrategyContext {
 
     private PptStateStrategyContext(PptStrategyDependencies dependencies,
                                     ChatMemory chatMemory,
-                                    ChatClient chatClient,
                                     List<ToolCallback> tools,
                                     Long currentSessionId) {
         this.dependencies = dependencies;
         this.chatMemory = chatMemory;
-        this.chatClient = chatClient;
         this.tools = tools;
         this.currentSessionId = currentSessionId;
     }
 
     public static PptStateStrategyContext forSession(PptStrategyDependencies dependencies,
                                                      ChatMemory chatMemory,
-                                                     ChatClient chatClient,
                                                      List<ToolCallback> tools,
                                                      Long currentSessionId) {
-        return new PptStateStrategyContext(dependencies, chatMemory, chatClient, tools, currentSessionId);
+        return new PptStateStrategyContext(dependencies, chatMemory, tools, currentSessionId);
     }
 
     public void loadChatHistory(String conversationId, List<Message> messages, boolean skipSystem, boolean addLabel) {

@@ -1,15 +1,15 @@
 package com.genchat.application.strategy;
 
+import com.agent.foundation.model.RunnableParams;
 import com.genchat.common.AgentStreamEvent;
 import com.genchat.common.prompts.PptBuilderPrompts;
 import com.genchat.dto.AiPptInst;
 import com.genchat.entity.PptInstStatus;
+import com.genchat.foundation.FoundationReactAgentFactory;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.util.StringUtils;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Sinks;
-import reactor.core.scheduler.Schedulers;
 
 import java.util.Objects;
 
@@ -40,13 +40,32 @@ public class FailedStrategy implements PptStateStrategy {
             prompt = PptBuilderPrompts.getFailurePrompt("Unknown errors encountered during PPT generation");
         }
         var responseBuffer = new StringBuilder();
-        var disposable = context.getChatClient().prompt()
-                .messages(new UserMessage(prompt))
-                .stream()
-                .content()
+        var agent = FoundationReactAgentFactory.create(
+                context.getDependencies().chatModel(),
+                context.getTools(),
+                5,
+                0,
+                true);
+        var disposable = agent.streamForEvents(
+                        prompt,
+                        RunnableParams.builder().conversationId(inst.getConversationId()).build())
                 .doOnNext(chunk -> {
-                    responseBuffer.append(chunk);
-                    sink.tryEmitNext(new AgentStreamEvent.Text(chunk).toJSON());
+                    if (chunk == null) {
+                        return;
+                    }
+                    if (chunk.type() == com.agent.foundation.model.AgentStreamEvent.Type.REASONING_CONTENT) {
+                        sink.tryEmitNext(new AgentStreamEvent.Thinking(chunk.content()).toJSON());
+                        return;
+                    }
+                    if (chunk.type() == com.agent.foundation.model.AgentStreamEvent.Type.RETRY
+                            || chunk.type() == com.agent.foundation.model.AgentStreamEvent.Type.PAUSED) {
+                        sink.tryEmitNext(new AgentStreamEvent.Thinking(chunk.content() + "\n").toJSON());
+                        return;
+                    }
+                    if (chunk.type() == com.agent.foundation.model.AgentStreamEvent.Type.COMPLETED) {
+                        responseBuffer.append(chunk.content());
+                        sink.tryEmitNext(new AgentStreamEvent.Text(chunk.content()).toJSON());
+                    }
                 })
                 .doOnComplete(() -> {
                     log.info("Failure indicates that the output is complete:{}", responseBuffer);
@@ -60,7 +79,6 @@ public class FailedStrategy implements PptStateStrategy {
                     saveSessionResult(context, fallbackMsg, thinkingBuffer);
                     sink.tryEmitComplete();
                 })
-                .subscribeOn(Schedulers.boundedElastic())
                 .subscribe();
 
         context.setDisposable(inst.getConversationId(), disposable);

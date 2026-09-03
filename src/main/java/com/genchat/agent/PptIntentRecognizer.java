@@ -1,16 +1,16 @@
 package com.genchat.agent;
 
+import com.agent.foundation.model.RunnableParams;
 import com.genchat.common.prompts.PptBuilderPrompts;
 import com.genchat.dto.PptIntent;
 import com.genchat.dto.PptIntentResult;
 import com.genchat.entity.PptInstStatus;
+import com.genchat.foundation.FoundationReactAgentFactory;
 import com.genchat.service.AiPptInstService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
@@ -18,11 +18,11 @@ import java.util.Arrays;
 
 @Slf4j
 public class PptIntentRecognizer {
-    private final ChatClient chatClient;
+    private final ChatModel chatModel;
     private final AiPptInstService pptInstService;
 
-    public PptIntentRecognizer(ChatClient chatClient, AiPptInstService pptInstService) {
-        this.chatClient = chatClient;
+    public PptIntentRecognizer(ChatModel chatModel, AiPptInstService pptInstService) {
+        this.chatModel = chatModel;
         this.pptInstService = pptInstService;
     }
 
@@ -54,11 +54,11 @@ public class PptIntentRecognizer {
         var recognitionPrompt = PptBuilderPrompts.INTENT_RECOGNITION_PROMPT;
         var converter = new BeanOutputConverter<PptIntentResult>(new ParameterizedTypeReference<>() {});
         try {
-            var content = chatClient.prompt()
-                    .messages(new SystemMessage(recognitionPrompt),
-                            new UserMessage("<question>" + question + "</question>"))
-                    .call()
-                    .content();
+            var agent = FoundationReactAgentFactory.create(chatModel, java.util.List.of(), 3, 0, false);
+            var result = agent.callForResult(
+                    recognitionPrompt + "\n\n<question>" + question + "</question>",
+                    RunnableParams.builder().build());
+            var content = result.content();
             log.info("Conversation recognition prompt. content: {}", content);
             return converter.convert(content);
         }catch (Exception e) {

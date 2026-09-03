@@ -2,7 +2,6 @@ package com.genchat.agent.deepresearch;
 
 import com.genchat.service.AgentTaskService;
 import com.genchat.service.AiChatSessionService;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
 
@@ -15,7 +14,6 @@ public record DeepResearchDependencies(
         List<ToolCallback> tools,
         AgentTaskService agentTaskService,
         int maxRounds,
-        ChatClient chatClient,
         Semaphore toolSemaphore,
         String agentType
 ) {
@@ -31,7 +29,6 @@ public record DeepResearchDependencies(
                 tools,
                 agentTaskService,
                 maxRounds,
-                ChatClient.builder(chatModel).build(),
                 new Semaphore(toolSemaphorePermits),
                 "DeepResearchAgent"
         );

@@ -1,9 +1,11 @@
 package com.genchat.agent.deepresearch;
 
+import com.agent.foundation.model.RunnableParams;
 import com.genchat.common.prompts.PlanExecutePrompts;
 import com.genchat.common.utils.ThinkTagParser;
 import com.genchat.agent.deepresearch.model.OverAllState;
 import com.genchat.dto.PlanTask;
+import com.genchat.foundation.FoundationReactAgentFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.stereotype.Component;
@@ -61,9 +63,15 @@ public class DeepResearchPlanner {
         if (ctx.isStopped(finished)) {
             return List.of();
         }
-        var content = deps.chatClient().prompt()
-                .messages(prompt.getInstructions())
-                .call()
+        var agent = FoundationReactAgentFactory.create(
+                deps.chatModel(),
+                deps.tools(),
+                deps.maxRounds(),
+                0,
+                true);
+        var content = agent.callForResult(
+                renderPrompt(prompt),
+                RunnableParams.builder().conversationId(overAllState.getConversationId()).build())
                 .content();
         var planTasks = converter.convert(ThinkTagParser.stripThinkTags(content));
         DeepResearchStreams.emitThinking(sink, finished,
@@ -77,5 +85,15 @@ public class DeepResearchPlanner {
             DeepResearchStreams.emitThinking(sink, finished, planText.toString());
         }
         return planTasks;
+    }
+
+    private String renderPrompt(Prompt prompt) {
+        StringBuilder sb = new StringBuilder();
+        for (var message : prompt.getInstructions()) {
+            sb.append('[').append(message.getMessageType()).append("]\n")
+                    .append(message.getText() == null ? "" : message.getText())
+                    .append("\n\n");
+        }
+        return sb.toString();
     }
 }

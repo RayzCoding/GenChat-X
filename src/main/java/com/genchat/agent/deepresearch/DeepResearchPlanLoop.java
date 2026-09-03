@@ -34,8 +34,7 @@ public class DeepResearchPlanLoop {
                 .subscribe(unused -> {
                         },
                         throwable -> {
-                            if (ctx.getCompositeDisposable().isDisposed() || Thread.currentThread().isInterrupted()
-                                    || (throwable.getMessage() != null && throwable.getMessage().contains("interrupted"))) {
+                            if (isUserStop(ctx, throwable)) {
                                 log.info("PlanExecuteAgent stopped by user: {}", throwable.getMessage());
                             } else {
                                 log.error("PlanExecuteAgent execute error", throwable);
@@ -92,8 +91,7 @@ public class DeepResearchPlanLoop {
                         "\n✅ Research phase completed, preparing final report\n");
                 reporter.summarizeStream(ctx, overAllState, sink, finished, finalAnswerBuffer);
             } catch (Exception e) {
-                if (!ctx.getCompositeDisposable().isDisposed() || Thread.currentThread().isInterrupted()
-                        || (e.getMessage() != null && e.getMessage().startsWith("Interrupted"))) {
+                if (isUserStop(ctx, e)) {
                     log.info("PlanExecuteAgent stopped by user: {}", e.getMessage());
                     sink.tryEmitNext("{\"type\":\"text\",\"content\":\"⏹ Generation stopped by user\\n\"}");
                     if (finished.compareAndSet(false, true)) {
@@ -105,5 +103,16 @@ public class DeepResearchPlanLoop {
                 }
             }
         });
+    }
+
+    static boolean isUserStop(DeepResearchRunContext ctx, Throwable throwable) {
+        if (ctx != null && ctx.getCompositeDisposable() != null && ctx.getCompositeDisposable().isDisposed()) {
+            return true;
+        }
+        if (Thread.currentThread().isInterrupted()) {
+            return true;
+        }
+        String message = throwable == null ? null : throwable.getMessage();
+        return message != null && message.toLowerCase().contains("interrupted");
     }
 }

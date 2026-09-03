@@ -1,11 +1,13 @@
 package com.genchat.agent.deepresearch;
 
+import com.agent.foundation.model.RunnableParams;
 import com.genchat.common.prompts.PlanExecutePrompts;
 import com.genchat.common.utils.ThinkTagParser;
 import com.genchat.dto.CritiqueResult;
 import com.genchat.agent.deepresearch.model.OverAllState;
 import com.genchat.dto.PlanTask;
 import com.genchat.dto.TaskResult;
+import com.genchat.foundation.FoundationReactAgentFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.stereotype.Component;
@@ -74,7 +76,16 @@ public class DeepResearchCritic {
                 new UserMessage(userMessage.toString())
         ));
 
-        String raw = deps.chatClient().prompt(prompt).call().content();
+        var agent = FoundationReactAgentFactory.create(
+                deps.chatModel(),
+                deps.tools(),
+                deps.maxRounds(),
+                0,
+                true);
+        String raw = agent.callForResult(
+                        renderPrompt(prompt),
+                        RunnableParams.builder().conversationId(state.getConversationId()).build())
+                .content();
         var result = converter.convert(ThinkTagParser.stripThinkTags(raw));
 
         if (result.passed()) {
@@ -85,5 +96,15 @@ public class DeepResearchCritic {
                     "\n⚠️ Research evaluation did not pass. Analysis: " + result.feedback() + "\n");
         }
         return result;
+    }
+
+    private String renderPrompt(Prompt prompt) {
+        StringBuilder sb = new StringBuilder();
+        for (var message : prompt.getInstructions()) {
+            sb.append('[').append(message.getMessageType()).append("]\n")
+                    .append(message.getText() == null ? "" : message.getText())
+                    .append("\n\n");
+        }
+        return sb.toString();
     }
 }

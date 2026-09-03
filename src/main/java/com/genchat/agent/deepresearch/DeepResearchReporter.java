@@ -1,10 +1,11 @@
 package com.genchat.agent.deepresearch;
 
+import com.agent.foundation.model.RunnableParams;
 import com.genchat.common.utils.JacksonJson;
 import com.genchat.common.AgentStreamEvent;
 import com.genchat.common.prompts.PlanExecutePrompts;
-import com.genchat.common.utils.ThinkTagParser;
 import com.genchat.agent.deepresearch.model.OverAllState;
+import com.genchat.foundation.FoundationReactAgentFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -13,7 +14,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.stereotype.Component;
 import reactor.core.Disposable;
 import reactor.core.publisher.Sinks;
-import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,8 +31,6 @@ public class DeepResearchReporter {
                                 AtomicBoolean finished,
                                 StringBuilder finalAnswerBuffer) {
         DeepResearchStreams.emitThinking(sink, finished, "\n📝 Generating final research report...\n\n");
-
-        final boolean[] summarizeInThinkHolder = {false};
         String toolResults = state.extractToolResults();
 
         Prompt prompt = new Prompt(List.of(
@@ -53,34 +51,37 @@ public class DeepResearchReporter {
                 ))
         ));
 
-        Disposable disposable = deps.chatClient().prompt()
-                .messages(prompt.getInstructions())
-                .stream()
-                .chatResponse()
-                .publishOn(Schedulers.boundedElastic())
-                .doOnNext(chunk -> {
+        var agent = FoundationReactAgentFactory.create(
+                deps.chatModel(),
+                deps.tools(),
+                deps.maxRounds(),
+                0,
+                true);
+        Disposable disposable = agent.streamForEvents(
+                        renderPrompt(prompt),
+                        RunnableParams.builder().conversationId(state.getConversationId()).build())
+                .doOnNext(event -> {
                     if (ctx.isStopped(finished)) {
                         return;
                     }
-                    if (chunk == null || chunk.getResult() == null || chunk.getResult().getOutput() == null) {
+                    if (event == null) {
                         return;
                     }
-                    String text = chunk.getResult().getOutput().getText();
-                    if (text == null) {
+                    if (event.type() == com.agent.foundation.model.AgentStreamEvent.Type.REASONING_CONTENT) {
+                        DeepResearchStreams.emitThinking(sink, finished, event.content());
                         return;
                     }
-                    ThinkTagParser.ParseResult parseResult = ThinkTagParser.parse(text, summarizeInThinkHolder[0]);
-                    summarizeInThinkHolder[0] = parseResult.inThink();
-                    for (ThinkTagParser.Segment segment : parseResult.segments()) {
-                        if (segment.thinking()) {
-                            DeepResearchStreams.emitThinking(sink, finished, segment.content());
-                        } else {
-                            finalAnswerBuffer.append(segment.content());
-                            if (finished.get()) {
-                                return;
-                            }
-                            sink.tryEmitNext(new AgentStreamEvent.Text(segment.content()).toJSON());
+                    if (event.type() == com.agent.foundation.model.AgentStreamEvent.Type.RETRY
+                            || event.type() == com.agent.foundation.model.AgentStreamEvent.Type.PAUSED) {
+                        DeepResearchStreams.emitThinking(sink, finished, event.content() + "\n");
+                        return;
+                    }
+                    if (event.type() == com.agent.foundation.model.AgentStreamEvent.Type.COMPLETED) {
+                        finalAnswerBuffer.append(event.content());
+                        if (finished.get()) {
+                            return;
                         }
+                        sink.tryEmitNext(new com.genchat.common.AgentStreamEvent.Text(event.content()).toJSON());
                     }
                 })
                 .doOnComplete(() -> {
@@ -92,9 +93,10 @@ public class DeepResearchReporter {
                     }
                 })
                 .doOnError(e -> {
-                    if (finished.compareAndSet(false, true)) {
-                        sink.tryEmitError(e);
+                    if (!finished.compareAndSet(false, true)) {
+                        return;
                     }
+                    sink.tryEmitError(e);
                 })
                 .subscribe();
 
@@ -128,14 +130,30 @@ public class DeepResearchReporter {
                 new UserMessage(state.renderFullContext())
         ));
 
-        String snapshot = deps.chatModel().call(prompt)
-                .getResult()
-                .getOutput()
-                .getText();
+        var agent = FoundationReactAgentFactory.create(
+                deps.chatModel(),
+                deps.tools(),
+                deps.maxRounds(),
+                0,
+                true);
+        String snapshot = agent.callForResult(
+                        renderPrompt(prompt),
+                        RunnableParams.builder().conversationId(state.getConversationId()).build())
+                .content();
 
         state.getMessages().clear();
         state.add(new SystemMessage("【Compressed Agent State】\n" + snapshot));
         log.warn("===== Context compression completed, size is {} =====", state.currentChars());
         DeepResearchStreams.emitThinking(sink, hasSentFinal, "✅ Context compression completed\n");
+    }
+
+    private String renderPrompt(Prompt prompt) {
+        StringBuilder sb = new StringBuilder();
+        for (var message : prompt.getInstructions()) {
+            sb.append('[').append(message.getMessageType()).append("]\n")
+                    .append(message.getText() == null ? "" : message.getText())
+                    .append("\n\n");
+        }
+        return sb.toString();
     }
 }

@@ -12,10 +12,8 @@ import com.genchat.entity.PptInstStatus;
 import com.genchat.service.*;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.ObjectUtils;
 import reactor.core.publisher.Flux;
@@ -30,7 +28,6 @@ public class PPTBuilderAgent implements PersistentChatAgent {
     private final ChatModel chatModel;
     private ChatMemory chatMemory;
     private final List<ToolCallback> tools;
-    private ChatClient chatClient;
     private AiChatSessionService sessionService;
     private AgentTaskService agentTaskService;
     protected Long currentSessionId;
@@ -62,19 +59,7 @@ public class PPTBuilderAgent implements PersistentChatAgent {
         this.minioService = pptStrategyDependencies.minioService();
         this.imageGenerationService = pptStrategyDependencies.imageGenerationService();
         this.pptPythonRenderService = pptStrategyDependencies.pptPythonRenderService();
-        initChatClient();
-        this.recognizer = new PptIntentRecognizer(chatClient, pptInstService);
-    }
-
-    private void initChatClient() {
-        var toolCallingChatOptions = ToolCallingChatOptions.builder()
-                .toolCallbacks(tools)
-                .internalToolExecutionEnabled(false)
-                .build();
-        this.chatClient = ChatClient.builder(this.chatModel)
-                .defaultOptions(toolCallingChatOptions)
-                .defaultToolCallbacks(tools)
-                .build();
+        this.recognizer = new PptIntentRecognizer(chatModel, pptInstService);
     }
 
     public Flux<String> stream(String conversationId, String question) {
@@ -160,7 +145,6 @@ public class PPTBuilderAgent implements PersistentChatAgent {
         this.strategyContext = PptStateStrategyContext.forSession(
                 pptStrategyDependencies,
                 chatMemory,
-                chatClient,
                 tools,
                 currentSessionId);
     }

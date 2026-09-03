@@ -1,5 +1,7 @@
 package com.genchat.agent.core;
 
+import com.agent.foundation.core.ReactAgent;
+import com.agent.foundation.model.RunnableParams;
 import com.genchat.application.agent.PersistentChatAgent;
 import com.genchat.application.stream.AgentStreamLifecycle;
 import com.genchat.application.stream.PersistentChatMemoryLoader;
@@ -9,26 +11,27 @@ import com.genchat.common.utils.JacksonJson;
 import com.genchat.dto.AiChatSession;
 import com.genchat.agent.model.AgentState;
 import com.genchat.context.ContextCompactor;
+import com.genchat.context.MessageTextExtractor;
+import com.genchat.foundation.FoundationReactAgentFactory;
+import com.genchat.foundation.FoundationToolPayloads;
 import com.genchat.service.AgentTaskService;
 import com.genchat.service.AiChatSessionService;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.*;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Shared ReAct loop engine for conversation agents with persistent memory.
@@ -41,7 +44,6 @@ public abstract class AbstractReactAgent implements PersistentChatAgent {
     protected final AiChatSessionService sessionService;
     protected final AgentTaskService agentTaskService;
     protected final List<ToolCallback> tools;
-    protected ChatClient chatClient;
     protected ChatMemory chatMemory;
     protected final String systemPrompt = "";
     protected int maxRounds;
@@ -63,7 +65,6 @@ public abstract class AbstractReactAgent implements PersistentChatAgent {
         this.sessionService = sessionService;
         this.agentTaskService = agentTaskService;
         this.tools = tools;
-        initChatClient();
     }
 
     protected abstract String getAgentType();
@@ -134,24 +135,47 @@ public abstract class AbstractReactAgent implements PersistentChatAgent {
         var aiChatSession = sessionService.saveQuestion(buildSessionForSave(request));
         currentSessionId = aiChatSession.getId();
 
-        List<Message> messages = Collections.synchronizedList(new ArrayList<>());
-        messages.add(new SystemMessage(getPrimarySystemPrompt()));
-        if (StringUtils.hasLength(systemPrompt)) {
-            messages.add(new SystemMessage(systemPrompt));
-        }
-        loadChatHistory(conversationId, messages, true, true);
+        List<Message> historyMessages = Collections.synchronizedList(new ArrayList<>());
+        loadChatHistory(conversationId, historyMessages, true, true);
 
-        messages.add(new UserMessage("<question>" + question + "</question>"));
-        appendExtraUserMessages(messages, request);
+        var extraMessages = new ArrayList<Message>();
+        appendExtraUserMessages(extraMessages, request);
+
+        String foundationQuestion = buildFoundationQuestion(question, historyMessages, extraMessages);
         currentQuestion = question;
 
-        var roundCounter = new AtomicInteger(0);
         var hasSentFinalResult = new AtomicBoolean(false);
         var buffers = AgentStreamLifecycle.StreamBuffers.create();
         var agentState = createAgentState();
 
-        createRoundScheduler().scheduleRound(messages, sink, roundCounter, hasSentFinalResult, buffers.finalAnswer(),
-                conversationId, agentState, buffers.thinking());
+        ReactAgent foundationAgent = FoundationReactAgentFactory.create(
+                chatModel,
+                tools,
+                maxRounds,
+                maxRetries,
+                contextCompactor != null);
+
+        foundationAgent.streamForEvents(
+                        foundationQuestion,
+                        RunnableParams.builder().conversationId(conversationId).build())
+                .publishOn(Schedulers.boundedElastic())
+                .doOnNext(event -> handleFoundationEvent(event, sink, hasSentFinalResult, conversationId, agentState))
+                .doOnError(error -> {
+                    if (!hasSentFinalResult.get()) {
+                        hasSentFinalResult.set(true);
+                        sink.tryEmitNext(AgentStreamEvent.Error.simple(error.getMessage()).toJSON());
+                        sink.tryEmitNext(new AgentStreamEvent.Complete().toJSON());
+                        sink.tryEmitComplete();
+                    }
+                })
+                .doOnComplete(() -> {
+                    if (!hasSentFinalResult.get()) {
+                        hasSentFinalResult.set(true);
+                        sink.tryEmitNext(new AgentStreamEvent.Complete().toJSON());
+                        sink.tryEmitComplete();
+                    }
+                })
+                .subscribe();
 
         return AgentStreamLifecycle.attach(
                 started.flux(),
@@ -173,49 +197,67 @@ public abstract class AbstractReactAgent implements PersistentChatAgent {
         this.chatMemory = PersistentChatMemoryLoader.load(sessionService, conversationId, maxMessages);
     }
 
-    private ReactRoundScheduler createRoundScheduler() {
-        return new ReactRoundScheduler(
-                chatClient,
-                tools,
-                agentTaskService,
-                maxRounds,
-                maxRetries,
-                toolRecords,
-                new ReactRoundScheduler.Callbacks() {
-                    @Override
-                    public void emitToolThinking(String toolName, String argsJson, Sinks.Many<String> sink) {
-                        AbstractReactAgent.this.emitToolThinking(toolName, argsJson, sink);
-                    }
+    protected void handleFoundationEvent(com.agent.foundation.model.AgentStreamEvent event,
+                                         Sinks.Many<String> sink,
+                                         AtomicBoolean hasSentFinalResult,
+                                         String conversationId,
+                                         AgentState agentState) {
+        if (event == null || hasSentFinalResult.get()) {
+            return;
+        }
 
-                    @Override
-                    public void handleToolResult(String toolName, String result, AgentState agentState) {
-                        AbstractReactAgent.this.handleToolResult(toolName, result, agentState);
-                    }
+        if (event.type() != com.agent.foundation.model.AgentStreamEvent.Type.STARTED) {
+            recordFirstResponse();
+        }
 
-                    @Override
-                    public void onNonToolFinish(String finalText, Sinks.Many<String> sink,
-                                                String conversationId, AgentState agentState) {
-                        AbstractReactAgent.this.onNonToolFinish(finalText, sink, conversationId, agentState);
-                    }
-
-                    @Override
-                    public void onForceFinalComplete(String finalText, Sinks.Many<String> sink,
-                                                     String conversationId, AgentState agentState) {
-                        AbstractReactAgent.this.onForceFinalComplete(finalText, sink, conversationId, agentState);
-                    }
-
-                    @Override
-                    public String getForceFinalSystemPrompt() {
-                        return AbstractReactAgent.this.getForceFinalSystemPrompt();
-                    }
-
-                    @Override
-                    public String getSystemPrompt() {
-                        return systemPrompt;
-                    }
-                },
-                contextCompactor,
-                currentQuestion);
+        switch (event.type()) {
+            case STARTED -> {
+                // Keep GenChat stream contract; started is represented by first thinking/text event.
+            }
+            case REASONING -> {
+                if (StringUtils.hasLength(event.content())) {
+                    sink.tryEmitNext(new AgentStreamEvent.Thinking(event.content() + "\n").toJSON());
+                }
+            }
+            case REASONING_CONTENT -> {
+                if (StringUtils.hasLength(event.content())) {
+                    sink.tryEmitNext(new AgentStreamEvent.Thinking(event.content() + "\n").toJSON());
+                }
+            }
+            case RETRY, PAUSED -> sink.tryEmitNext(new AgentStreamEvent.Thinking(event.content() + "\n").toJSON());
+            case TOOL_EXECUTED -> {
+                var payload = FoundationToolPayloads.decode(event.content());
+                String toolName = payload.toolName();
+                String toolCallId = payload.toolCallId();
+                String argumentsJson = payload.argumentsJson();
+                String result = payload.result();
+                sink.tryEmitNext(new AgentStreamEvent.ToolStart(toolName, toolCallId, argumentsJson).toJSON());
+                sink.tryEmitNext(new AgentStreamEvent.ToolEnd(toolName, toolCallId, result).toJSON());
+                toolRecords.add(new ToolRecord(toolName, toolCallId, argumentsJson, result));
+                handleToolResult(toolName, result, agentState);
+            }
+            case ERROR -> {
+                hasSentFinalResult.set(true);
+                sink.tryEmitNext(AgentStreamEvent.Error.simple(StringUtils.hasLength(event.content())
+                        ? event.content()
+                        : "Agent execution failed").toJSON());
+                sink.tryEmitNext(new AgentStreamEvent.Complete().toJSON());
+                sink.tryEmitComplete();
+            }
+            case COMPLETED -> {
+                hasSentFinalResult.set(true);
+                var finalText = event.content();
+                if (StringUtils.hasLength(finalText)) {
+                    sink.tryEmitNext(new AgentStreamEvent.Text(finalText).toJSON());
+                }
+                onNonToolFinish(finalText, sink, conversationId, agentState);
+                sink.tryEmitNext(new AgentStreamEvent.Complete().toJSON());
+                sink.tryEmitComplete();
+            }
+            case STAGE -> {
+                // Internal foundation events are not exposed as user-facing stream chunks.
+            }
+        }
     }
 
     private String generateRecommendations(String conversationId, String currentQuestion, String currentAnswer) {
@@ -231,6 +273,45 @@ public abstract class AbstractReactAgent implements PersistentChatAgent {
 
     protected String getHistoryLabel() {
         return "Conversation history：";
+    }
+
+    private String buildFoundationQuestion(String question,
+                                           List<Message> baseMessages,
+                                           List<Message> extraMessages) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<genchat_context>\n");
+        appendSection(sb, "system", getPrimarySystemPrompt());
+        appendSection(sb, "system_extra", systemPrompt);
+        appendMessageSection(sb, "history", baseMessages);
+        appendMessageSection(sb, "extra", extraMessages);
+        appendSection(sb, "question", "<question>" + question + "</question>");
+        sb.append("</genchat_context>");
+        return sb.toString();
+    }
+
+    private void appendSection(StringBuilder sb, String tag, String content) {
+        if (!StringUtils.hasLength(content)) {
+            return;
+        }
+        sb.append('<').append(tag).append('>').append('\n');
+        sb.append(content).append('\n');
+        sb.append("</").append(tag).append('>').append('\n');
+    }
+
+    private void appendMessageSection(StringBuilder sb, String tag, List<Message> messages) {
+        if (ObjectUtils.isEmpty(messages)) {
+            return;
+        }
+        sb.append('<').append(tag).append('>').append('\n');
+        for (Message message : messages) {
+            if (message == null) {
+                continue;
+            }
+            sb.append('[').append(message.getMessageType()).append("] ")
+                    .append(MessageTextExtractor.extractText(message))
+                    .append('\n');
+        }
+        sb.append("</").append(tag).append('>').append('\n');
     }
 
     private void loadChatHistory(String conversationId, List<Message> messages, boolean skipSystem, boolean addLabel) {
@@ -259,16 +340,6 @@ public abstract class AbstractReactAgent implements PersistentChatAgent {
         return historyMessages;
     }
 
-    private void initChatClient() {
-        var toolCallingChatOptions = ToolCallingChatOptions.builder()
-                .toolCallbacks(tools)
-                .internalToolExecutionEnabled(false)
-                .build();
-        this.chatClient = ChatClient.builder(this.chatModel)
-                .defaultOptions(toolCallingChatOptions)
-                .defaultToolCallbacks(tools)
-                .build();
-    }
 
     protected void recordFirstResponse() {
         if (firstResponseTime == 0 && startTime > 0) {

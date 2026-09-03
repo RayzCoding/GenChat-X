@@ -1,8 +1,10 @@
 package com.genchat.context;
 
+import com.agent.foundation.model.RunnableParams;
 import com.genchat.common.prompts.ReactAgentPrompts;
 import com.genchat.common.utils.JacksonJson;
 import com.genchat.common.utils.ThinkTagParser;
+import com.genchat.foundation.FoundationReactAgentFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -11,8 +13,6 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -203,11 +203,11 @@ public class ContextCompactor {
         String conversationText = buildConversationText(messages);
 
         try {
-            ChatResponse response = chatModel.call(new Prompt(List.of(
-                    new SystemMessage(ReactAgentPrompts.getCompactSummarySystemPrompt()),
-                    new UserMessage(ReactAgentPrompts.getCompactSummaryUserPrompt(conversationText, currentQuestion))
-            )));
-            String summary = response.getResult().getOutput().getText();
+            var promptMessages = new ArrayList<Message>();
+            promptMessages.add(new SystemMessage(ReactAgentPrompts.getCompactSummarySystemPrompt()));
+            promptMessages.add(new UserMessage(ReactAgentPrompts.getCompactSummaryUserPrompt(conversationText, currentQuestion)));
+            var agent = FoundationReactAgentFactory.create(chatModel, List.of(), 3, 0, false);
+            String summary = agent.callForResult(renderMessages(promptMessages), RunnableParams.builder().build()).content();
             summary = ThinkTagParser.stripThinkTags(summary);
 
             log.info("Context summary generated: {} chars input -> {} chars summary",
@@ -218,6 +218,16 @@ public class ContextCompactor {
             log.warn("LLM summary failed, falling back to message-level truncation: {}", e.getMessage());
             return truncationFallback(messages);
         }
+    }
+
+    private String renderMessages(List<Message> messages) {
+        StringBuilder sb = new StringBuilder();
+        for (Message message : messages) {
+            sb.append('[').append(message.getMessageType()).append("] ")
+                    .append(MessageTextExtractor.extractText(message))
+                    .append("\n\n");
+        }
+        return sb.toString();
     }
 
     private String truncationFallback(List<Message> messages) {

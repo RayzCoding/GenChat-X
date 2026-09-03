@@ -1,9 +1,11 @@
 package com.genchat.application.strategy;
 
+import com.agent.foundation.model.RunnableParams;
 import com.genchat.common.AgentStreamEvent;
 import com.genchat.common.prompts.PptBuilderPrompts;
 import com.genchat.dto.AiPptInst;
 import com.genchat.entity.PptInstStatus;
+import com.genchat.foundation.FoundationReactAgentFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -11,7 +13,6 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Sinks;
-import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
 
@@ -38,13 +39,31 @@ public class RequirementStrategy implements PptStateStrategy {
         }
 
         var responseBuffer = new StringBuilder();
-        var disposable = context.getChatClient().prompt()
-                .messages(messages)
-                .stream()
-                .content()
+        var agent = FoundationReactAgentFactory.create(
+                context.getDependencies().chatModel(),
+                context.getTools(),
+                5,
+                0,
+                true);
+        var disposable = agent.streamForEvents(
+                        renderMessages(messages),
+                        RunnableParams.builder().conversationId(conversationId).build())
                 .doOnNext(chunk -> {
-                    responseBuffer.append(chunk);
-                    sink.tryEmitNext(new AgentStreamEvent.Thinking(chunk).toJSON());
+                    if (chunk == null) {
+                        return;
+                    }
+                    if (chunk.type() == com.agent.foundation.model.AgentStreamEvent.Type.REASONING_CONTENT) {
+                        sink.tryEmitNext(new AgentStreamEvent.Thinking(chunk.content()).toJSON());
+                        return;
+                    }
+                    if (chunk.type() == com.agent.foundation.model.AgentStreamEvent.Type.RETRY
+                            || chunk.type() == com.agent.foundation.model.AgentStreamEvent.Type.PAUSED) {
+                        sink.tryEmitNext(new AgentStreamEvent.Thinking(chunk.content() + "\n").toJSON());
+                        return;
+                    }
+                    if (chunk.type() == com.agent.foundation.model.AgentStreamEvent.Type.COMPLETED) {
+                        responseBuffer.append(chunk.content());
+                    }
                 })
                 .doOnComplete(() -> {
                     log.info("Requirements analysis completed: {}", responseBuffer);
@@ -79,7 +98,6 @@ public class RequirementStrategy implements PptStateStrategy {
                     // Go to FAILED policy
                     context.getDependencies().strategyFactory().executeFailedStrategy(inst, sink, question, thinkingBuffer, context);
                 })
-                .subscribeOn(Schedulers.boundedElastic())
                 .subscribe();
 
         // Save the disposable to the task manager to stop the task
@@ -89,5 +107,15 @@ public class RequirementStrategy implements PptStateStrategy {
     @Override
     public PptInstStatus getTargetStatus() {
         return TARGET_STATUS;
+    }
+
+    private String renderMessages(java.util.List<Message> messages) {
+        StringBuilder sb = new StringBuilder();
+        for (Message message : messages) {
+            sb.append('[').append(message.getMessageType()).append("]\n")
+                    .append(message.getText() == null ? "" : message.getText())
+                    .append("\n\n");
+        }
+        return sb.toString();
     }
 }

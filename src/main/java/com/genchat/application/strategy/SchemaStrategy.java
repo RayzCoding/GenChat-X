@@ -1,5 +1,6 @@
 package com.genchat.application.strategy;
 
+import com.agent.foundation.model.RunnableParams;
 import com.genchat.common.utils.JacksonJson;
 import com.genchat.common.AgentStreamEvent;
 import com.genchat.common.prompts.PptBuilderPrompts;
@@ -8,8 +9,8 @@ import com.genchat.dto.FieldData;
 import com.genchat.dto.PptSchema;
 import com.genchat.dto.Slide;
 import com.genchat.entity.PptInstStatus;
+import com.genchat.foundation.FoundationReactAgentFactory;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
@@ -47,7 +48,16 @@ public class SchemaStrategy implements PptStateStrategy {
         });
 
         var disposable = Mono.fromCallable(() -> {
-                    var text = context.getDependencies().chatModel().call(new Prompt(schemaGenerationPrompt)).getResult().getOutput().getText();
+                    var agent = FoundationReactAgentFactory.create(
+                            context.getDependencies().chatModel(),
+                            context.getTools(),
+                            5,
+                            0,
+                            true);
+                    var text = agent.callForResult(
+                                    schemaGenerationPrompt,
+                                    RunnableParams.builder().conversationId(inst.getConversationId()).build())
+                            .content();
                     var pptSchema = pptSchemaBeanOutputConverter.convert(text);
                     var pptSchemaJson = JacksonJson.toJson(pptSchema);
 
@@ -158,10 +168,16 @@ public class SchemaStrategy implements PptStateStrategy {
         });
 
         var disposable = Mono.fromCallable(() -> {
-                    var text = context.getDependencies().chatModel().call(new Prompt(schemaModifyPrompt))
-                            .getResult()
-                            .getOutput()
-                            .getText();
+                    var agent = FoundationReactAgentFactory.create(
+                            context.getDependencies().chatModel(),
+                            context.getTools(),
+                            5,
+                            0,
+                            true);
+                    var text = agent.callForResult(
+                                    schemaModifyPrompt,
+                                    RunnableParams.builder().conversationId(inst.getConversationId()).build())
+                            .content();
                     var pptSchema = pptSchemaBeanOutputConverter.convert(text);
                     var pptSchemaJson = JacksonJson.toJson(pptSchema);
 

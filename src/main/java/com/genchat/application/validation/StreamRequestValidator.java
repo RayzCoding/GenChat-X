@@ -33,6 +33,16 @@ public final class StreamRequestValidator {
     }
 
     /**
+     * Prefer `conversationId` and fallback to legacy `conversationsId`.
+     */
+    public static String resolveConversationId(String conversationId, String conversationsId) {
+        if (StringUtils.hasLength(conversationId)) {
+            return conversationId;
+        }
+        return conversationsId;
+    }
+
+    /**
      * Returns a failed flux when validation fails; {@code null} means the request is valid.
      */
     public static Flux<String> requireConversationIdFlux(String conversationId) {
