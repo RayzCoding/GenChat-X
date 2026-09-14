@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { stopAgent, streamDeepResearch } from '../services/agentApi'
+import type { AgentChunk } from '../types'
 import type { DeepResearchState } from '../types/deepResearch'
 import { INITIAL_DEEP_RESEARCH_STATE } from '../types/deepResearch'
-import { parseAgentChunk } from '../utils/chat'
+import { expandStreamChunk, parseAgentChunk } from '../utils/chat'
 import { isDeepResearchRunning } from '../utils/deepResearchMarkers'
 import { reduceDeepResearchState, startDeepResearch } from '../utils/deepResearchState'
+import { createStreamUiPump } from '../utils/streamUiPump'
 
 export function useDeepResearchStream(conversationId: string) {
   const [state, setState] = useState<DeepResearchState>(INITIAL_DEEP_RESEARCH_STATE)
   const [error, setError] = useState<string | null>(null)
   const [elapsedMs, setElapsedMs] = useState(0)
   const abortRef = useRef<AbortController | null>(null)
+  const pumpRef = useRef<ReturnType<typeof createStreamUiPump<AgentChunk>> | null>(null)
   const timerRef = useRef<number | null>(null)
   const startedAtRef = useRef<number | null>(null)
 
@@ -68,12 +71,29 @@ export function useDeepResearchStream(conversationId: string) {
       const controller = new AbortController()
       abortRef.current = controller
 
+      const pump = createStreamUiPump<AgentChunk>((batch) => {
+        if (batch.length === 0) return
+        setState((prev) => batch.reduce((current, chunk) => reduceDeepResearchState(current, chunk), prev))
+      })
+      pumpRef.current = pump
+
       try {
         await streamDeepResearch(conversationId, apiQuestion, controller.signal, (line) => {
           const chunk = parseAgentChunk(line)
           if (!chunk) return
-          setState((prev) => reduceDeepResearchState(prev, chunk))
+          expandStreamChunk(chunk).forEach((piece) => pump.push(piece))
         })
+
+        if (controller.signal.aborted) {
+          pump.flush()
+        } else {
+          await pump.whenIdle()
+        }
+
+        if (controller.signal.aborted) {
+          setState((prev) => ({ ...prev, phase: 'stopped' }))
+          return
+        }
 
         setState((prev) =>
           prev.phase === 'summarizing' || prev.report
@@ -83,6 +103,7 @@ export function useDeepResearchStream(conversationId: string) {
               : { ...prev, phase: 'complete' },
         )
       } catch (err) {
+        pump.flush()
         if (controller.signal.aborted) {
           setState((prev) => ({ ...prev, phase: 'stopped' }))
         } else {
@@ -94,6 +115,7 @@ export function useDeepResearchStream(conversationId: string) {
           setState((prev) => ({ ...prev, phase: 'error' }))
         }
       } finally {
+        pumpRef.current = null
         clearTimer()
         abortRef.current = null
       }
@@ -102,6 +124,7 @@ export function useDeepResearchStream(conversationId: string) {
   )
 
   const stopGeneration = useCallback(async () => {
+    pumpRef.current?.flush()
     abortRef.current?.abort()
     try {
       await stopAgent(conversationId)
@@ -113,6 +136,7 @@ export function useDeepResearchStream(conversationId: string) {
   }, [conversationId, clearTimer])
 
   const reset = useCallback(() => {
+    pumpRef.current?.flush()
     abortRef.current?.abort()
     clearTimer()
     setState(INITIAL_DEEP_RESEARCH_STATE)

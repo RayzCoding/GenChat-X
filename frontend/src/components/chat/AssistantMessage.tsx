@@ -1,5 +1,4 @@
 import type { ChatTurn } from '../../types'
-import { Icon } from '../ui/Icon'
 import { MarkdownContent } from './MarkdownContent'
 import { RecommendChips } from './RecommendChips'
 import { ReferenceTags } from './ReferenceTags'
@@ -21,8 +20,8 @@ export function AssistantMessage({
 
   return (
     <div className="flex justify-start gap-4 duration-700 animate-in fade-in slide-in-from-left-4">
-      <div className="ai-glow flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/20">
-        <Icon name="auto_awesome" filled className="text-xl text-primary" />
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#48413B]/20 bg-gradient-to-tr from-[#3D3834] via-[#574F49] to-[#8C7E72] font-serif text-sm font-bold text-[#FBF9F5] shadow-sm">
+        G
       </div>
 
       <div className="max-w-[90%] flex-1 space-y-6">
@@ -33,7 +32,7 @@ export function AssistantMessage({
         />
 
         {(turn.content || isStreaming) && (
-          <div className="glass-panel ai-glow rounded-2xl border border-primary/10 p-8">
+          <div className="rounded-2xl border border-[#EFECE6] bg-white p-6 shadow-warm-card md:p-8">
             <MarkdownContent content={turn.content} isStreaming={isStreaming} />
             {turn.references && turn.references.length > 0 && (
               <ReferenceTags references={turn.references} />

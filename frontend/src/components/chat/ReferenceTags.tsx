@@ -7,10 +7,10 @@ interface ReferenceTagsProps {
 }
 
 const badgeColors = [
-  'bg-blue-500/20 text-blue-300',
-  'bg-green-500/20 text-green-300',
-  'bg-primary/20 text-primary',
-  'bg-secondary/20 text-secondary',
+  'bg-primary/10 text-primary',
+  'bg-tertiary/10 text-tertiary',
+  'bg-secondary/10 text-secondary',
+  'bg-accent-ppt/10 text-accent-ppt',
 ]
 
 function displayTitle(ref: SearchResult): string {

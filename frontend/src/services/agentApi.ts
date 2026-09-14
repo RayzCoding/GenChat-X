@@ -1,3 +1,4 @@
+import type { UnifiedStreamRequest } from '../types'
 import { readAgentSseStream } from '../utils/agentStream'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
@@ -14,16 +15,26 @@ function buildUrl(path: string, params?: Record<string, string | number | undefi
   return url.toString()
 }
 
-async function streamAgentGet(
-  path: string,
-  params: Record<string, string | number | undefined>,
+export async function streamAgent(
+  request: UnifiedStreamRequest,
   signal: AbortSignal,
   onChunk: (line: string) => void,
 ): Promise<void> {
-  const url = buildUrl(path, params)
-  const response = await fetch(url, {
+  const response = await fetch(buildUrl('/agent/stream'), {
+    method: 'POST',
     signal,
-    headers: { Accept: 'text/event-stream' },
+    cache: 'no-store',
+    headers: {
+      Accept: 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      mode: request.mode,
+      question: request.question,
+      conversationId: request.conversationId,
+      fileId: request.fileId,
+    }),
   })
 
   if (!response.ok) {
@@ -40,7 +51,7 @@ export async function streamChat(
   signal: AbortSignal,
   onChunk: (line: string) => void,
 ): Promise<void> {
-  await streamAgentGet('/agent/chat/stream', { conversationId, question }, signal, onChunk)
+  await streamAgent({ mode: 'chat', conversationId, question }, signal, onChunk)
 }
 
 export async function stopAgent(conversationId: string): Promise<void> {
@@ -54,7 +65,7 @@ export async function streamDeepResearch(
   signal: AbortSignal,
   onChunk: (line: string) => void,
 ): Promise<void> {
-  await streamAgentGet('/agent/deep/stream', { conversationsId, question }, signal, onChunk)
+  await streamAgent({ mode: 'deep', conversationId: conversationsId, question }, signal, onChunk)
 }
 
 export async function streamPpt(
@@ -63,7 +74,7 @@ export async function streamPpt(
   signal: AbortSignal,
   onChunk: (line: string) => void,
 ): Promise<void> {
-  await streamAgentGet('/agent/ppt/stream', { conversationsId, question }, signal, onChunk)
+  await streamAgent({ mode: 'ppt', conversationId: conversationsId, question }, signal, onChunk)
 }
 
 export async function streamSkills(
@@ -73,5 +84,19 @@ export async function streamSkills(
   signal: AbortSignal,
   onChunk: (line: string) => void,
 ): Promise<void> {
-  await streamAgentGet('/agent/skills/stream', { conversationsId, question, fileId }, signal, onChunk)
+  await streamAgent(
+    { mode: 'skills', conversationId: conversationsId, question, fileId },
+    signal,
+    onChunk,
+  )
+}
+
+export async function streamFileChat(
+  conversationId: string,
+  question: string,
+  fileId: string,
+  signal: AbortSignal,
+  onChunk: (line: string) => void,
+): Promise<void> {
+  await streamAgent({ mode: 'file', conversationId, question, fileId }, signal, onChunk)
 }

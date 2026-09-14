@@ -6,30 +6,44 @@ import type { Components } from 'react-markdown'
 interface MarkdownContentProps {
   content: string
   isStreaming?: boolean
+  className?: string
   onLinkClick?: (href: string, event: MouseEvent<HTMLAnchorElement>) => void
 }
 
-const baseComponents: Components = {
-  h3: ({ children }) => (
-    <div className="rounded-xl border border-outline-variant/10 bg-surface-container-high/50 p-4">
-      <strong className="mb-1 block text-primary">{children}</strong>
+const markdownComponents: Components = {
+  h1: ({ children }) => <h1>{children}</h1>,
+  h2: ({ children }) => <h2>{children}</h2>,
+  h3: ({ children }) => <h3>{children}</h3>,
+  h4: ({ children }) => <h4>{children}</h4>,
+  ul: ({ children }) => <ul>{children}</ul>,
+  ol: ({ children }) => <ol>{children}</ol>,
+  li: ({ children }) => <li>{children}</li>,
+  p: ({ children }) => <p>{children}</p>,
+  blockquote: ({ children }) => <blockquote>{children}</blockquote>,
+  hr: () => <hr />,
+  table: ({ children }) => (
+    <div className="markdown-table-wrap">
+      <table>{children}</table>
     </div>
   ),
-  strong: ({ children }) => <strong className="text-on-surface">{children}</strong>,
+  a: ({ href, children }) => (
+    <a href={href} target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
+  ),
 }
 
-export function MarkdownContent({ content, isStreaming, onLinkClick }: MarkdownContentProps) {
+export function MarkdownContent({ content, isStreaming, className, onLinkClick }: MarkdownContentProps) {
   if (!content && !isStreaming) return null
 
   const components: Components = onLinkClick
     ? {
-        ...baseComponents,
+        ...markdownComponents,
         a: ({ href, children }) => (
           <a
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary underline underline-offset-2 hover:opacity-80"
             onClick={(event) => {
               if (href) {
                 onLinkClick(href, event)
@@ -40,10 +54,10 @@ export function MarkdownContent({ content, isStreaming, onLinkClick }: MarkdownC
           </a>
         ),
       }
-    : baseComponents
+    : markdownComponents
 
   return (
-    <div className="markdown-body">
+    <div className={['markdown-body', className].filter(Boolean).join(' ')}>
       {content ? (
         <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
           {content}

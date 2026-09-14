@@ -11,8 +11,10 @@ interface HistoryCardProps {
   session: SessionSummary
   multiSelectMode: boolean
   selected: boolean
+  deleting?: boolean
   onSelectChange: (checked: boolean) => void
   onOpen: () => void
+  onDelete: () => void
   locale: string
 }
 
@@ -20,8 +22,10 @@ export function HistoryCard({
   session,
   multiSelectMode,
   selected,
+  deleting = false,
   onSelectChange,
   onOpen,
+  onDelete,
   locale,
 }: HistoryCardProps) {
   const { t } = useTranslation()
@@ -33,25 +37,32 @@ export function HistoryCard({
         multiSelectMode ? 'pl-[60px]' : ''
       }`}
     >
-      <div className="absolute right-4 top-4 flex gap-1 opacity-0 transition-opacity group-hover/card:opacity-100">
-        <button
-          type="button"
-          title={t('history.actions.pin')}
-          className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-highest hover:text-primary"
-        >
-          <Icon name="push_pin" className="text-[18px]" />
-        </button>
-        <button
-          type="button"
-          title={t('history.actions.rename')}
-          className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-highest hover:text-primary"
-        >
-          <Icon name="edit" className="text-[18px]" />
-        </button>
+      <div className="absolute right-4 top-4 z-10 flex gap-1">
+        <div className="hidden gap-1 md:flex md:opacity-0 md:transition-opacity md:group-hover/card:opacity-100">
+          <button
+            type="button"
+            title={t('history.actions.pin')}
+            className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-highest hover:text-primary"
+          >
+            <Icon name="push_pin" className="text-[18px]" />
+          </button>
+          <button
+            type="button"
+            title={t('history.actions.rename')}
+            className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-highest hover:text-primary"
+          >
+            <Icon name="edit" className="text-[18px]" />
+          </button>
+        </div>
         <button
           type="button"
           title={t('history.actions.delete')}
-          className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-highest hover:text-error"
+          disabled={deleting}
+          onClick={(event) => {
+            event.stopPropagation()
+            onDelete()
+          }}
+          className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-error-container hover:text-error disabled:opacity-40"
         >
           <Icon name="delete" className="text-[18px]" />
         </button>

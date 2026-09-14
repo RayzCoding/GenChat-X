@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@600;700&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0');
 
 @tailwind base;
@@ -7,11 +7,11 @@
 
 @layer base {
   body {
-    @apply bg-surface text-on-surface font-body-md antialiased;
+    @apply bg-surface text-on-surface font-sans antialiased;
   }
 
   body ::selection {
-    @apply bg-primary/30;
+    @apply bg-primary/20 text-warm-900;
   }
 }
 
@@ -24,51 +24,57 @@
 }
 
 @layer components {
+  .chat-bg-warm {
+    background-color: #fbf9f5;
+    background-image: radial-gradient(rgba(180, 160, 135, 0.12) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
   .glass-panel {
-    background: rgba(26, 27, 35, 0.7);
-    backdrop-filter: blur(30px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.86);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(234, 230, 223, 0.9);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
   }
 
   .ai-glow {
-    box-shadow: 0 0 15px rgba(62, 123, 255, 0.15);
+    box-shadow: 0 8px 24px rgba(201, 122, 62, 0.08);
   }
 
   .cyber-border {
-    border: 1px solid rgba(178, 197, 255, 0.2);
+    border: 1px solid #e7e2d8;
   }
 
   .thinking-shimmer {
-    background: linear-gradient(90deg, transparent, rgba(0, 223, 193, 0.1), transparent);
+    background: linear-gradient(90deg, transparent, rgba(201, 122, 62, 0.08), transparent);
     background-size: 200% 100%;
     animation: shimmer 2s infinite;
   }
 
   .glass-card {
-    background: rgba(30, 31, 40, 0.6);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #ffffff;
+    border: 1px solid #efece6;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .glass-card:hover {
-    border-color: rgba(178, 197, 255, 0.3);
-    background: rgba(41, 41, 50, 0.8);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.5);
+    border-color: #dfcdbb;
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(180, 165, 150, 0.16), 0 4px 10px rgba(0, 0, 0, 0.03);
   }
 
   .active-filter {
-    background: rgba(92, 140, 255, 0.15);
-    border: 1px solid rgba(92, 140, 255, 0.4);
-    color: #b2c5ff;
-    box-shadow: 0 0 15px rgba(62, 123, 255, 0.2);
+    background: #faf3ea;
+    border: 1px solid #e8d4be;
+    color: #a85a24;
+    box-shadow: 0 2px 8px rgba(180, 165, 150, 0.08);
   }
 
   .cyber-glass {
-    background: rgba(18, 19, 27, 0.7);
-    backdrop-filter: blur(30px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(18px);
+    border: 1px solid #eae6df;
   }
 
   .chat-bubble-ai {
@@ -79,26 +85,20 @@
     border-bottom-right-radius: 4px;
   }
 
-  .cyber-glow {
-    box-shadow: 0 0 20px rgba(92, 140, 255, 0.25);
-  }
-
-  .neon-glow {
-    box-shadow: 0 0 12px rgba(92, 140, 255, 0.4);
-  }
-
+  .cyber-glow,
+  .neon-glow,
   .glow-primary {
-    box-shadow: 0 0 20px rgba(178, 197, 255, 0.1);
+    box-shadow: 0 8px 24px rgba(201, 122, 62, 0.1);
   }
 
   .shimmer {
-    background: linear-gradient(90deg, transparent, rgba(62, 123, 255, 0.1), transparent);
+    background: linear-gradient(90deg, transparent, rgba(201, 122, 62, 0.12), transparent);
     background-size: 200% 100%;
     animation: shimmer 2s infinite linear;
   }
 
   .shimmer-bar {
-    background: linear-gradient(90deg, transparent, rgba(0, 223, 193, 0.3), transparent);
+    background: linear-gradient(90deg, transparent, rgba(72, 115, 85, 0.28), transparent);
     background-size: 200% 100%;
     animation: shimmer 2s infinite;
   }
@@ -110,7 +110,7 @@
     top: 48px;
     bottom: 24px;
     width: 1px;
-    background: rgba(140, 144, 160, 0.2);
+    background: rgba(213, 204, 189, 0.9);
   }
 
   .task-node::before {
@@ -120,12 +120,12 @@
     top: 50%;
     width: 24px;
     height: 1px;
-    background: rgba(140, 144, 160, 0.2);
+    background: rgba(213, 204, 189, 0.9);
   }
 
   .terminal-scroll {
     scrollbar-width: thin;
-    scrollbar-color: rgba(140, 144, 160, 0.2) transparent;
+    scrollbar-color: #e5dfd3 transparent;
   }
 
   .custom-scrollbar::-webkit-scrollbar {
@@ -137,21 +137,29 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(140, 144, 160, 0.2);
+    background: #e5dfd3;
     border-radius: 10px;
   }
 
-  /* Stitch: Active Files section caption (file-qa-consistent.html) */
   .section-caption {
     padding-left: 0.5rem;
     padding-right: 0.5rem;
-    font-family: Geist, system-ui, sans-serif;
+    font-family: 'Source Sans 3', 'Noto Sans SC', system-ui, sans-serif;
     font-size: 10px;
     font-weight: 500;
     line-height: 1.4;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #c2c6d7;
+    color: #9c907e;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
 
@@ -165,7 +173,8 @@
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -173,65 +182,158 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #33343d;
-  border-radius: 10px;
+  background: #e5dfd3;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #d5ccbd;
 }
 
 .markdown-body {
-  @apply space-y-6 font-body-md leading-relaxed text-on-surface-variant;
+  @apply font-body-md text-[15px] leading-7 text-on-surface-variant;
+}
+
+.markdown-body > :first-child {
+  @apply mt-0;
+}
+
+.markdown-body > :last-child {
+  @apply mb-0;
 }
 
 .markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4 {
+  @apply font-headline-md font-semibold tracking-tight text-warm-900;
+}
+
+.markdown-body h1 {
+  @apply mb-3 mt-6 text-[22px] leading-snug;
+}
+
 .markdown-body h2 {
-  @apply font-headline-md text-headline-md text-primary mb-4;
+  @apply mb-2.5 mt-5 text-[18px] leading-snug;
 }
 
 .markdown-body h3 {
-  @apply mb-1 block font-label-md text-primary;
+  @apply mb-2 mt-4 text-[16px] leading-snug;
+}
+
+.markdown-body h4 {
+  @apply mb-1.5 mt-3 text-[15px] leading-snug;
 }
 
 .markdown-body p {
-  @apply leading-relaxed;
+  @apply my-3 leading-7;
 }
 
 .markdown-body strong {
-  @apply text-on-surface;
+  @apply font-semibold text-on-surface;
 }
 
-.markdown-body ul,
+.markdown-body em {
+  @apply italic;
+}
+
+.markdown-body ul {
+  @apply my-3 list-disc space-y-1 pl-6;
+}
+
 .markdown-body ol {
-  @apply pl-5;
+  @apply my-3 list-decimal space-y-1 pl-6;
+}
+
+.markdown-body ul ul {
+  @apply my-1 list-[circle];
+}
+
+.markdown-body ol ol {
+  @apply my-1 list-[lower-alpha];
+}
+
+.markdown-body li {
+  @apply leading-7;
+}
+
+.markdown-body li > p {
+  @apply my-1;
+}
+
+.markdown-body li > p:first-child {
+  @apply mt-0;
+}
+
+.markdown-body li > p:last-child {
+  @apply mb-0;
 }
 
 .markdown-body code {
-  @apply rounded bg-surface-container-high px-1.5 py-0.5 font-mono-code text-sm;
+  @apply rounded bg-surface-container-high px-1.5 py-0.5 font-mono-code text-[13px] text-warm-800;
 }
 
 .markdown-body pre {
-  @apply overflow-x-auto rounded-xl border border-outline-variant/10 bg-surface-container-low p-4;
+  @apply my-3 overflow-x-auto rounded-xl border border-outline-variant bg-warm-100 p-4;
 }
 
 .markdown-body pre code {
-  @apply bg-transparent p-0;
+  @apply bg-transparent p-0 text-[13px] leading-6;
 }
 
 .markdown-body a {
-  @apply text-primary hover:underline;
+  @apply text-primary underline-offset-2 hover:underline;
 }
 
 .markdown-body blockquote {
-  @apply border-l-2 border-tertiary-fixed/30 pl-4 text-on-surface-variant;
+  @apply my-3 border-l-2 border-primary/40 pl-4 text-on-surface-variant;
+}
+
+.markdown-table-wrap {
+  @apply my-3 overflow-x-auto;
 }
 
 .markdown-body table {
-  @apply w-full border-collapse;
+  @apply w-full border-collapse text-sm;
 }
 
 .markdown-body th,
 .markdown-body td {
-  @apply border border-outline-variant/20 px-3 py-2 text-left;
+  @apply border border-outline-variant px-3 py-2 text-left;
 }
 
 .markdown-body th {
-  @apply bg-surface-container-high/50;
+  @apply bg-surface-container-high/80 font-semibold text-warm-900;
+}
+
+.markdown-body hr {
+  @apply my-5 border-outline-variant;
+}
+
+.markdown-body img {
+  @apply my-3 max-w-full rounded-xl;
+}
+
+.markdown-body.markdown-thinking {
+  @apply text-[13px] leading-6;
+}
+
+.markdown-body.markdown-thinking h1,
+.markdown-body.markdown-thinking h2,
+.markdown-body.markdown-thinking h3,
+.markdown-body.markdown-thinking h4 {
+  @apply mb-1 mt-2.5 text-[13px] font-semibold leading-6;
+}
+
+.markdown-body.markdown-thinking p {
+  @apply my-2 leading-6;
+}
+
+.markdown-body.markdown-thinking ul,
+.markdown-body.markdown-thinking ol {
+  @apply my-2;
+}
+
+.markdown-body.markdown-thinking pre {
+  @apply my-2 p-3;
 }

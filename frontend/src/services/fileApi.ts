@@ -1,4 +1,4 @@
-import { readAgentSseStream } from '../utils/agentStream'
+import { streamFileChat as streamAgentFileChat } from './agentApi'
 import { normalizeMinioFileUrl } from '../utils/pptUi'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
@@ -85,16 +85,5 @@ export async function streamFileChat(
   signal: AbortSignal,
   onChunk: (line: string) => void,
 ): Promise<void> {
-  const url = buildUrl('/agent/file/stream', { conversationId, question, fileId })
-  const response = await fetch(url, {
-    signal,
-    headers: { Accept: 'text/event-stream' },
-  })
-
-  if (!response.ok) {
-    const text = await response.text().catch(() => '')
-    throw new Error(text || `HTTP ${response.status}`)
-  }
-
-  await readAgentSseStream(response, onChunk)
+  await streamAgentFileChat(conversationId, question, fileId, signal, onChunk)
 }

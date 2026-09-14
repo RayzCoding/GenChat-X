@@ -14,8 +14,9 @@
     "support": "支持"
   },
   "user": {
-    "name": "Alex Rivera",
-    "role": "Premium Researcher"
+    "name": "用户",
+    "avatar": "用户",
+    "role": "账户"
   },
   "topbar": {
     "searchPlaceholder": "Search history...",
@@ -58,7 +59,14 @@
     "selected": "已选择项目",
     "archive": "归档",
     "delete": "删除",
+    "deleting": "删除中...",
     "cancel": "取消",
+    "confirmTitle": "删除对话",
+    "confirmOne": "确定删除这条对话吗？删除后无法恢复。",
+    "confirmMany": "确定删除选中的 {{count}} 条对话吗？删除后无法恢复。",
+    "confirmAction": "确认删除",
+    "deleteFailed": "删除失败，请稍后重试",
+    "deletePartialFailed": "部分对话删除失败，请稍后重试",
     "loading": "加载中...",
     "newExplore": "开始新的探索",
     "rounds": "轮",
@@ -317,6 +325,95 @@
     "error": {
       "generic": "请求失败，请稍后重试",
       "inProgress": "当前会话正在处理中，请稍后再试"
+    }
+  },
+  "workbench": {
+    "badge": "智能中枢",
+    "toggleSidebar": "展开/收起侧栏",
+    "greeting": "你好呀 👋 很高兴为你服务",
+    "heroTitle": "我是 GenChat，你的全能智能助手",
+    "heroSubtitle": "支持联网搜索 · 文档研读 · PPT一键生成 · 深度研究 · 丰富技能",
+    "recommended": "推荐提示：",
+    "placeholder": "问你想问的，或输入指令、拖入文件...",
+    "placeholderFile": "请先上传文档，再针对文件提问...",
+    "shiftEnter": "Shift + Enter 换行",
+    "disclaimer": "内容由 AI 生成，请仔细核实重要信息",
+    "removeFile": "移除附件",
+    "voice": "智能语音录入",
+    "sidebar": {
+      "today": "今天",
+      "week": "近 7 天",
+      "older": "更早"
+    },
+    "mode": {
+      "chat": "联网搜索",
+      "chatOn": "联网搜索 · 开启",
+      "chatShort": "对话",
+      "file": "上传文档",
+      "fileOn": "文档 · 已挂载",
+      "fileShort": "文档",
+      "deep": "DeepResearch",
+      "deepShort": "深度研报",
+      "ppt": "PPT 生成",
+      "pptOn": "PPT生成模式",
+      "pptShort": "PPT生成",
+      "skills": "技能助手",
+      "skillsOn": "技能助手 · 开启",
+      "skillsShort": "技能"
+    },
+    "cards": {
+      "chat": {
+        "title": "实时联网问答",
+        "desc": "实时抓取全网最新资讯、技术动态与行业前沿要点",
+        "action": "立即问答"
+      },
+      "file": {
+        "title": "深度文档分析",
+        "desc": "支持上传 PDF、Word、Excel，精炼提炼与溯源比对",
+        "action": "解析文档"
+      },
+      "ppt": {
+        "title": "PPT 大纲与制作",
+        "desc": "录入主题或材料，一键规划大纲并渲染可编辑演示页",
+        "action": "制作演示"
+      },
+      "deep": {
+        "title": "DeepResearch 深度长程研究",
+        "desc": "自主执行海量学术文献与市场情报检索，交叉比对多方证据链并生成详实综合报告",
+        "action": "开启深度研究",
+        "badge": "自主多步规划"
+      },
+      "skills": {
+        "title": "技能插件市场",
+        "desc": "集成丰富行业能力、SQL 数据沙盒与流程脚本",
+        "action": "探索技能"
+      }
+    },
+    "pills": {
+      "deepAi": {
+        "label": "📑 2026年AI趋势研报 (DeepResearch)",
+        "prompt": "请对 2026 年人工智能行业趋势做一份深度研报，覆盖技术突破、市场规模与重点应用场景。"
+      },
+      "pptPitch": {
+        "label": "📊 生成商业路演 PPT 大纲",
+        "prompt": "帮我生成一份商业路演 PPT 大纲，面向投资人，包含市场、产品、竞争与融资计划。"
+      },
+      "chatTech": {
+        "label": "🔍 实时检索最新科技动态",
+        "prompt": "请联网检索并总结最近一周的全球科技与人工智能重要动态。"
+      },
+      "filePdf": {
+        "label": "📂 分析财报 PDF 并提炼要点",
+        "prompt": "请分析上传的财报 PDF，提炼营收、利润、风险与管理层观点。"
+      },
+      "chatCopy": {
+        "label": "💡 创意头脑风暴与文案润色",
+        "prompt": "请帮我做一轮创意头脑风暴，并润色一版面向用户的产品介绍文案。"
+      },
+      "skillsRun": {
+        "label": "⚡ 执行自定义自动化 Skill",
+        "prompt": "请根据当前任务选择合适的 Skill，帮我完成自动化处理。"
+      }
     }
   }
 }

@@ -1,3 +1,12 @@
+export type AgentMode = 'chat' | 'file' | 'deep' | 'ppt' | 'skills'
+
+export interface UnifiedStreamRequest {
+  mode: AgentMode
+  question: string
+  conversationId?: string
+  fileId?: string
+}
+
 export interface SearchResult {
   url: string
   title: string

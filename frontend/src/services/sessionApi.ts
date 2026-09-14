@@ -48,6 +48,9 @@ export async function deleteSession(conversationId: string): Promise<void> {
     buildUrl(`/agent/sessions/${encodeURIComponent(conversationId)}`),
     { method: 'DELETE' },
   )
+  if (response.status === 404) {
+    return
+  }
   const result = (await response.json()) as ApiResult<null>
   if (!response.ok || result.code !== 200) {
     throw new Error(result.message || `Delete failed (${response.status})`)

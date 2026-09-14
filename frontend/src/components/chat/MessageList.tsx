@@ -14,6 +14,7 @@ interface MessageListProps {
   emptyState?: ReactNode
   maxWidthClass?: string
   layout?: MessageListLayout
+  renderAssistant?: (turn: ChatTurn) => ReactNode
 }
 
 export function MessageList({
@@ -23,6 +24,7 @@ export function MessageList({
   emptyState,
   maxWidthClass = 'max-w-chat',
   layout = 'chat',
+  renderAssistant,
 }: MessageListProps) {
   const { t } = useTranslation()
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -83,6 +85,8 @@ export function MessageList({
         {turns.map((turn) =>
           turn.role === 'user' ? (
             <UserBubble key={turn.id} content={turn.content} />
+          ) : renderAssistant ? (
+            <div key={turn.id}>{renderAssistant(turn)}</div>
           ) : (
             <AssistantMessage
               key={turn.id}

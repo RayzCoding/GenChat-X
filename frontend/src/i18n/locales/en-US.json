@@ -14,8 +14,9 @@
     "support": "Support"
   },
   "user": {
-    "name": "Alex Rivera",
-    "role": "Premium Researcher"
+    "name": "User",
+    "avatar": "User",
+    "role": "Account"
   },
   "topbar": {
     "searchPlaceholder": "Search history...",
@@ -58,7 +59,14 @@
     "selected": "Selected",
     "archive": "Archive",
     "delete": "Delete",
+    "deleting": "Deleting...",
     "cancel": "Cancel",
+    "confirmTitle": "Delete conversation",
+    "confirmOne": "Delete this conversation? This cannot be undone.",
+    "confirmMany": "Delete {{count}} selected conversations? This cannot be undone.",
+    "confirmAction": "Delete",
+    "deleteFailed": "Failed to delete. Please try again.",
+    "deletePartialFailed": "Some conversations could not be deleted. Please try again.",
     "loading": "Loading...",
     "newExplore": "Start a new exploration",
     "rounds": "rounds",
@@ -317,6 +325,95 @@
     "error": {
       "generic": "Request failed. Please try again.",
       "inProgress": "This conversation is in progress. Please try again later."
+    }
+  },
+  "workbench": {
+    "badge": "Intelligence Hub",
+    "toggleSidebar": "Toggle sidebar",
+    "greeting": "Hi there 👋 Glad to help",
+    "heroTitle": "I'm GenChat, your all-in-one assistant",
+    "heroSubtitle": "Web search · Document analysis · PPT generation · Deep research · Skills",
+    "recommended": "Suggested prompts:",
+    "placeholder": "Ask anything, give an instruction, or drop in a file...",
+    "placeholderFile": "Upload a document first, then ask about it...",
+    "shiftEnter": "Shift + Enter for newline",
+    "disclaimer": "AI-generated content. Please verify important information.",
+    "removeFile": "Remove attachment",
+    "voice": "Voice input",
+    "sidebar": {
+      "today": "Today",
+      "week": "Last 7 days",
+      "older": "Earlier"
+    },
+    "mode": {
+      "chat": "Web search",
+      "chatOn": "Web search · On",
+      "chatShort": "Chat",
+      "file": "Upload file",
+      "fileOn": "Document attached",
+      "fileShort": "File",
+      "deep": "DeepResearch",
+      "deepShort": "Research",
+      "ppt": "PPT",
+      "pptOn": "PPT mode",
+      "pptShort": "PPT",
+      "skills": "Skills",
+      "skillsOn": "Skills · On",
+      "skillsShort": "Skills"
+    },
+    "cards": {
+      "chat": {
+        "title": "Live web Q&A",
+        "desc": "Fetch the latest news, technical updates, and industry signals in real time",
+        "action": "Ask now"
+      },
+      "file": {
+        "title": "Deep document analysis",
+        "desc": "Upload PDF, Word, or Excel for grounded extraction and citation",
+        "action": "Analyze files"
+      },
+      "ppt": {
+        "title": "PPT outline & slides",
+        "desc": "Describe a topic and generate an editable presentation",
+        "action": "Create deck"
+      },
+      "deep": {
+        "title": "DeepResearch long-horizon study",
+        "desc": "Autonomously search literature and market intel, then synthesize a report",
+        "action": "Start research",
+        "badge": "Multi-step planning"
+      },
+      "skills": {
+        "title": "Skills marketplace",
+        "desc": "Industry playbooks, SQL sandboxes, and workflow scripts",
+        "action": "Explore skills"
+      }
+    },
+    "pills": {
+      "deepAi": {
+        "label": "📑 2026 AI trend report (DeepResearch)",
+        "prompt": "Write a deep research report on 2026 AI industry trends, covering breakthroughs, market size, and key applications."
+      },
+      "pptPitch": {
+        "label": "📊 Generate a pitch deck outline",
+        "prompt": "Create a pitch deck outline for investors covering market, product, competition, and fundraising."
+      },
+      "chatTech": {
+        "label": "🔍 Search the latest tech news",
+        "prompt": "Search the web and summarize the most important global tech and AI news from the past week."
+      },
+      "filePdf": {
+        "label": "📂 Analyze a financial PDF",
+        "prompt": "Analyze the uploaded earnings PDF and extract revenue, profit, risks, and management commentary."
+      },
+      "chatCopy": {
+        "label": "💡 Brainstorm and polish copy",
+        "prompt": "Brainstorm ideas and polish a user-facing product introduction."
+      },
+      "skillsRun": {
+        "label": "⚡ Run a custom Skill",
+        "prompt": "Pick the right Skill for this task and complete it automatically."
+      }
     }
   }
 }
