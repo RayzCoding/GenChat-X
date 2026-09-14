@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 
 export default defineConfig({
   plugins: [react()],
@@ -11,21 +12,39 @@ export default defineConfig({
         changeOrigin: true,
         timeout: 0,
         proxyTimeout: 0,
+        selfHandleResponse: true,
         configure(proxy) {
-          proxy.on('proxyRes', (proxyRes, req, res) => {
+          proxy.on('error', (err, _req, res) => {
+            const socket = res as ServerResponse | undefined
+            if (socket && !socket.headersSent) {
+              socket.writeHead(502)
+              socket.end(String(err.message ?? 'Bad gateway'))
+            }
+          })
+          proxy.on('proxyRes', (proxyRes: IncomingMessage, req, res: ServerResponse) => {
             const contentType = String(proxyRes.headers['content-type'] ?? '')
             const url = req.url ?? ''
-            if (contentType.includes('text/event-stream') || url.includes('/stream')) {
-              proxyRes.headers['cache-control'] = 'no-cache, no-transform'
-              proxyRes.headers['x-accel-buffering'] = 'no'
-              delete proxyRes.headers['content-length']
-              delete proxyRes.headers['content-encoding']
-              res.setHeader('Cache-Control', 'no-cache, no-transform')
-              res.setHeader('X-Accel-Buffering', 'no')
-              res.setHeader('Connection', 'keep-alive')
-              if (typeof res.flushHeaders === 'function') {
-                res.flushHeaders()
-              }
+            const isSse = contentType.includes('text/event-stream') || url.includes('/stream')
+            const headers = { ...proxyRes.headers }
+            if (isSse) {
+              headers['cache-control'] = 'no-cache, no-transform'
+              headers['x-accel-buffering'] = 'no'
+              headers['connection'] = 'keep-alive'
+              delete headers['content-length']
+              delete headers['content-encoding']
+            }
+
+            res.writeHead(proxyRes.statusCode ?? 200, headers)
+            if (isSse) {
+              proxyRes.on('data', (chunk: Buffer) => {
+                res.write(chunk)
+                const flushable = res as ServerResponse & { flush?: () => void }
+                flushable.flush?.()
+              })
+              proxyRes.on('end', () => res.end())
+              proxyRes.on('error', () => res.end())
+            } else {
+              proxyRes.pipe(res)
             }
           })
         },

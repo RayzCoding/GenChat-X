@@ -22,28 +22,6 @@ export function parseAgentChunk(raw: string): AgentChunk | null {
   return null
 }
 
-export function applyChunks(turn: ChatTurn, chunks: AgentChunk[]): ChatTurn {
-  return chunks.reduce((current, chunk) => applyChunk(current, chunk), turn)
-}
-
-const STREAM_PIECE_SIZE = 20
-
-/** Split a large text/thinking payload so the UI can paint it incrementally. */
-export function expandStreamChunk(chunk: AgentChunk): AgentChunk[] {
-  if (chunk.type !== 'text' && chunk.type !== 'thinking') {
-    return [chunk]
-  }
-  const content = chunk.content
-  if (typeof content !== 'string' || content.length <= STREAM_PIECE_SIZE) {
-    return [chunk]
-  }
-  const pieces: AgentChunk[] = []
-  for (let i = 0; i < content.length; i += STREAM_PIECE_SIZE) {
-    pieces.push({ ...chunk, content: content.slice(i, i + STREAM_PIECE_SIZE) })
-  }
-  return pieces
-}
-
 export function applyChunk(turn: ChatTurn, chunk: AgentChunk): ChatTurn {
   switch (chunk.type) {
     case 'text':

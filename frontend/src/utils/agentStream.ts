@@ -14,6 +14,9 @@ export function expandStreamPayloads(raw: string): string[] {
 
   try {
     const parsed = JSON.parse(payload) as unknown
+    if (typeof parsed === 'string') {
+      return expandStreamPayloads(parsed)
+    }
     if (Array.isArray(parsed)) {
       return parsed.flatMap((item) => {
         if (typeof item === 'string') {
@@ -30,6 +33,12 @@ export function expandStreamPayloads(raw: string): string[] {
   }
 
   return [payload]
+}
+
+function yieldForPaint(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => resolve())
+  })
 }
 
 export async function readAgentSseStream(
@@ -49,12 +58,15 @@ export async function readAgentSseStream(
     if (done) break
 
     buffer += decoder.decode(value, { stream: true })
-    const lines = buffer.split('\n')
+    const lines = buffer.split(/\r?\n/)
     buffer = lines.pop() ?? ''
 
-    for (const rawLine of lines) {
-      for (const payload of expandStreamPayloads(rawLine)) {
-        onChunk(payload)
+    const payloads = lines.flatMap((rawLine) => expandStreamPayloads(rawLine))
+    const burst = payloads.length > 1
+    for (const payload of payloads) {
+      onChunk(payload)
+      if (burst) {
+        await yieldForPaint()
       }
     }
   }

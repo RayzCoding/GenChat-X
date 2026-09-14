@@ -47,7 +47,7 @@ export function MessageList({
 
   useEffect(() => {
     if (!userScrolledRef.current) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+      bottomRef.current?.scrollIntoView({ behavior: isStreaming ? 'auto' : 'smooth' })
     }
   }, [turns, isStreaming])
 

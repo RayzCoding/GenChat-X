@@ -1,8 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { stopAgent, streamAgent } from '../services/agentApi'
-import type { AgentChunk, AgentMode, ChatTurn } from '../types'
-import { applyChunks, createId, expandStreamChunk, parseAgentChunk } from '../utils/chat'
-import { createStreamUiPump } from '../utils/streamUiPump'
+import type { AgentMode, ChatTurn } from '../types'
+import { applyChunk, createId, parseAgentChunk } from '../utils/chat'
 
 interface UseAgentStreamOptions {
   conversationId: string
@@ -19,7 +18,6 @@ export function useAgentStream({
   const [isStreaming, setIsStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
-  const pumpRef = useRef<ReturnType<typeof createStreamUiPump<AgentChunk>> | null>(null)
 
   const setTurnsExternal = useCallback((next: ChatTurn[]) => {
     setTurns(next)
@@ -53,14 +51,6 @@ export function useAgentStream({
       const controller = new AbortController()
       abortRef.current = controller
 
-      const pump = createStreamUiPump<AgentChunk>((batch) => {
-        if (batch.length === 0) return
-        setTurns((prev) =>
-          prev.map((turn) => (turn.id === assistantId ? applyChunks(turn, batch) : turn)),
-        )
-      })
-      pumpRef.current = pump
-
       try {
         await streamAgent(
           {
@@ -73,24 +63,11 @@ export function useAgentStream({
           (line) => {
             const chunk = parseAgentChunk(line)
             if (!chunk) return
-            expandStreamChunk(chunk).forEach((piece) => pump.push(piece))
+            setTurns((prev) =>
+              prev.map((turn) => (turn.id === assistantId ? applyChunk(turn, chunk) : turn)),
+            )
           },
         )
-
-        if (controller.signal.aborted) {
-          pump.flush()
-        } else {
-          await pump.whenIdle()
-        }
-
-        if (controller.signal.aborted) {
-          setTurns((prev) =>
-            prev.map((turn) =>
-              turn.id === assistantId ? { ...turn, status: 'stopped' } : turn,
-            ),
-          )
-          return
-        }
 
         setTurns((prev) =>
           prev.map((turn) =>
@@ -101,7 +78,6 @@ export function useAgentStream({
         )
         onSessionUpdated?.()
       } catch (err) {
-        pump.flush()
         if (controller.signal.aborted) {
           setTurns((prev) =>
             prev.map((turn) =>
@@ -123,7 +99,6 @@ export function useAgentStream({
           )
         }
       } finally {
-        pumpRef.current = null
         onStreamComplete?.()
         setIsStreaming(false)
         abortRef.current = null
@@ -133,7 +108,6 @@ export function useAgentStream({
   )
 
   const stopGeneration = useCallback(async () => {
-    pumpRef.current?.flush()
     abortRef.current?.abort()
     try {
       await stopAgent(conversationId)
