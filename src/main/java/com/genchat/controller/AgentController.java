@@ -3,8 +3,11 @@ package com.genchat.controller;
 import com.genchat.application.agent.AgentFacade;
 import com.genchat.application.validation.StreamRequestValidator;
 import com.genchat.dto.StopAgentResponse;
+import com.genchat.dto.UnifiedAgentStreamRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -18,6 +21,18 @@ import reactor.core.publisher.Flux;
 public class AgentController {
 
     private final AgentFacade agentFacade;
+
+    @PostMapping(value = "/stream", produces = "text/event-stream;charset=UTF-8")
+    public Flux<String> unifiedStream(@RequestBody UnifiedAgentStreamRequest request) {
+        log.info("received request to unified stream, mode: {}, conversationId: {}",
+                request != null ? request.mode() : null,
+                request != null ? StreamRequestValidator.resolveConversationId(request.conversationId(), request.conversationsId()) : null);
+        var error = StreamRequestValidator.validateUnifiedStreamFlux(request);
+        if (error != null) {
+            return error;
+        }
+        return agentFacade.unifiedStream(request);
+    }
 
     @GetMapping(value = "/chat/stream", produces = "text/event-stream;charset=UTF-8")
     public Flux<String> chat(@RequestParam String conversationId,

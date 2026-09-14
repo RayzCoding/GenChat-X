@@ -37,8 +37,9 @@ public class AgentFactory {
     @Value("${skills.directory:}")
     private String skillsDirectory;
 
-    public WebSearchReactAgent createWebSearchAgent() {
-        var agent = new WebSearchReactAgent(
+    public ComposableReactAgent createWebSearchAgent() {
+        var agent = new ComposableReactAgent(
+                ComposableReactAgent.Mode.CHAT,
                 chatModel,
                 sessionService,
                 agentTaskService,
@@ -63,12 +64,14 @@ public class AgentFactory {
         return agent;
     }
 
-    public FileReactAgent createFileReactAgent() {
-        var agent = new FileReactAgent(
+    public ComposableReactAgent createFileReactAgent() {
+        var agent = new ComposableReactAgent(
+                ComposableReactAgent.Mode.FILE,
                 chatModel,
                 sessionService,
                 agentTaskService,
-                List.of(ToolCallbacks.from(fileContentTool)));
+                ToolCallbacks.from(fileContentTool),
+                0);
         agent.setContextCompactor(contextCompactor);
         return agent;
     }
@@ -82,7 +85,7 @@ public class AgentFactory {
                 pptStrategyDependenciesProvider.getObject());
     }
 
-    public SkillsReactAgent createSkillsReactAgent() {
+    public ComposableReactAgent createSkillsReactAgent() {
         var webSearchToolCallbacks = webSearchToolInitConfig.getWebSearchToolCallbacks();
         var toolCallbacks = ToolMergeUtils.mergeTools(
                 webSearchToolCallbacks,
@@ -91,7 +94,8 @@ public class AgentFactory {
                         .addSkillsDirectory(skillsDirectory)
                         .build()},
                 GrepTool.create());
-        var agent = new SkillsReactAgent(
+        var agent = new ComposableReactAgent(
+                ComposableReactAgent.Mode.SKILLS,
                 chatModel,
                 sessionService,
                 agentTaskService,

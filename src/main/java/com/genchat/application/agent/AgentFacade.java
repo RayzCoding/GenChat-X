@@ -2,6 +2,8 @@ package com.genchat.application.agent;
 
 import com.genchat.config.GenChatProperties;
 import com.genchat.dto.StopAgentResponse;
+import com.genchat.dto.UnifiedAgentMode;
+import com.genchat.dto.UnifiedAgentStreamRequest;
 import com.genchat.service.AgentTaskService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +49,20 @@ public class AgentFacade {
     public Flux<String> skillsStream(String conversationsId, String question, String fileId) {
         return streamWithMemory(conversationsId, "skills stream", agentFactory::createSkillsReactAgent,
                 agent -> agent.stream(conversationsId, question, fileId));
+    }
+
+    public Flux<String> unifiedStream(UnifiedAgentStreamRequest request) {
+        UnifiedAgentMode mode = request.resolvedMode();
+        String question = request.resolvedQuestion();
+        String conversationId = request.resolvedConversationId();
+        return switch (mode) {
+            case CHAT -> chatStream(conversationId, question);
+            case DEEP -> deepStream(question, conversationId);
+            case SIMPLE -> simpleStream(question);
+            case FILE -> fileStream(conversationId, question, request.fileId());
+            case PPT -> pptStream(conversationId, question);
+            case SKILLS -> skillsStream(conversationId, question, request.fileId());
+        };
     }
 
     public StopAgentResponse stopAgent(String conversationId) {

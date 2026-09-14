@@ -113,6 +113,23 @@ cd frontend && npm install && npm run dev
 
 运行前请配置 `application.yml` 中的 MySQL、Redis、OpenAI 兼容 API、Tavily、MinIO、PgVector 等连接信息（支持环境变量覆盖）。Agent 行为相关参数可通过 `genchat.*` 配置项调整（如 ReAct 轮次、会话记忆窗口、文件分块大小等）。
 
+### 统一流式入口（可选）
+
+后端已提供统一 SSE 接口 `POST /agent/stream`，可通过 `mode` 参数分流到不同能力（同时保留原有 `/agent/chat/stream` 等接口）。
+
+示例请求：
+
+```json
+{
+  "mode": "file",
+  "question": "请总结这份文档",
+  "conversationId": "conv-123",
+  "fileId": "file-abc"
+}
+```
+
+支持的 `mode`：`chat`(默认)、`simple`、`file`、`deep`、`ppt`、`skills`。
+
 更多前端说明见 [`frontend/README.md`](frontend/README.md)。
 
 ## 🛠️ 技术栈

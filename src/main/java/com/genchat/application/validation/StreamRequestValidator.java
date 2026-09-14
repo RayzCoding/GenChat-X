@@ -1,5 +1,7 @@
 package com.genchat.application.validation;
 
+import com.genchat.dto.UnifiedAgentMode;
+import com.genchat.dto.UnifiedAgentStreamRequest;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
@@ -64,5 +66,39 @@ public final class StreamRequestValidator {
             return Flux.error(new IllegalArgumentException("conversationId or question is null or empty"));
         }
         return null;
+    }
+
+    /**
+     * Returns a failed flux when unified stream validation fails; {@code null} means valid.
+     */
+    public static Flux<String> validateUnifiedStreamFlux(UnifiedAgentStreamRequest request) {
+        if (request == null) {
+            return Flux.error(new IllegalArgumentException("request is null"));
+        }
+
+        String question = request.resolvedQuestion();
+        var questionError = requireQuestionFlux(question);
+        if (questionError != null) {
+            return questionError;
+        }
+
+        UnifiedAgentMode mode;
+        try {
+            mode = request.resolvedMode();
+        } catch (IllegalArgumentException ex) {
+            return Flux.error(ex);
+        }
+
+        String conversationId = request.resolvedConversationId();
+        return switch (mode) {
+            case CHAT, DEEP -> requireConversationIdFlux(conversationId);
+            case FILE -> {
+                if (!StringUtils.hasLength(request.fileId())) {
+                    yield Flux.error(new IllegalArgumentException("fileId is null or empty"));
+                }
+                yield requireConversationIdFlux(conversationId);
+            }
+            case SIMPLE, PPT, SKILLS -> null;
+        };
     }
 }
