@@ -2,6 +2,7 @@ package com.genchat.config;
 
 import com.genchat.common.ResourceNotFoundException;
 import com.genchat.common.Result;
+import com.genchat.common.error.ApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Result<Void>> handleBadRequest(IllegalArgumentException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.fail(400, ex.getMessage()));
+    }
+
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<Result<Void>> handleApiException(ApiException ex) {
+        HttpStatus status = ex.getCode() >= 40000 && ex.getCode() < 50000
+                ? HttpStatus.BAD_REQUEST
+                : HttpStatus.INTERNAL_SERVER_ERROR;
+        return ResponseEntity.status(status).body(Result.fail(ex.getCode(), ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

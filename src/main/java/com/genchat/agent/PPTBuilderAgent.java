@@ -1,6 +1,7 @@
 package com.genchat.agent;
 
 import com.genchat.application.agent.PersistentChatAgent;
+import com.genchat.application.audit.AgentAuditSupport;
 import com.genchat.application.stream.AgentStreamLifecycle;
 import com.genchat.application.stream.PersistentChatMemoryLoader;
 import com.genchat.application.strategy.PptStateStrategyContext;
@@ -115,11 +116,24 @@ public class PPTBuilderAgent implements PersistentChatAgent {
                 this::recordFirstResponse,
                 null,
                 () -> {
-                    AgentStreamLifecycle.logStreamBuffers(buffers);
-                    sessionService.update(currentSessionId, buffers.finalAnswer(),
-                            buffers.thinking(), agentState, getTotalResponseTime(),
-                            firstResponseTime, null,
-                            currentRecommendations, AGENT_TYPE, null);
+                    long totalResponseTime = getTotalResponseTime();
+                    AgentAuditSupport.persistSession(
+                            sessionService,
+                            currentSessionId,
+                            buffers,
+                            agentState,
+                            totalResponseTime,
+                            firstResponseTime,
+                            null,
+                            currentRecommendations,
+                            AGENT_TYPE,
+                            null);
+                    AgentAuditSupport.logCompletion(
+                            log,
+                            AGENT_TYPE,
+                            conversationId,
+                            totalResponseTime,
+                            firstResponseTime);
                 });
     }
 

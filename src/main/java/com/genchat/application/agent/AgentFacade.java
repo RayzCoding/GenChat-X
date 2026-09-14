@@ -55,6 +55,10 @@ public class AgentFacade {
         UnifiedAgentMode mode = request.resolvedMode();
         String question = request.resolvedQuestion();
         String conversationId = request.resolvedConversationId();
+        log.info("agent.stream.dispatch mode={} conversationId={} questionLength={}",
+                mode,
+                conversationId,
+                question != null ? question.length() : 0);
         return switch (mode) {
             case CHAT -> chatStream(conversationId, question);
             case DEEP -> deepStream(question, conversationId);

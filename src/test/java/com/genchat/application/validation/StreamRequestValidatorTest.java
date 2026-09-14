@@ -1,11 +1,14 @@
 package com.genchat.application.validation;
 
+import com.genchat.common.error.ApiException;
+import com.genchat.common.error.StreamErrorCode;
 import com.genchat.dto.UnifiedAgentStreamRequest;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class StreamRequestValidatorTest {
 
@@ -24,6 +27,13 @@ class StreamRequestValidatorTest {
     @Test
     void requireQuestionFluxReturnsErrorWhenEmpty() {
         assertNotNull(StreamRequestValidator.requireQuestionFlux(""));
+    }
+
+    @Test
+    void requireQuestionFluxReturnsCodedApiException() {
+        var error = assertThrows(ApiException.class,
+                () -> StreamRequestValidator.requireQuestionFlux("").blockFirst());
+        assertEquals(StreamErrorCode.QUESTION_EMPTY.code(), error.getCode());
     }
 
     @Test
@@ -47,6 +57,14 @@ class StreamRequestValidatorTest {
     void unifiedStreamValidationRequiresFileIdForFileMode() {
         var request = new UnifiedAgentStreamRequest("file", "hello", null, "conv-1", null, null);
         assertNotNull(StreamRequestValidator.validateUnifiedStreamFlux(request));
+    }
+
+    @Test
+    void unifiedStreamValidationReturnsModeCodeForUnsupportedMode() {
+        var request = new UnifiedAgentStreamRequest("invalid_mode", "hello", null, "conv-1", null, null);
+        var error = assertThrows(ApiException.class,
+                () -> StreamRequestValidator.validateUnifiedStreamFlux(request).blockFirst());
+        assertEquals(StreamErrorCode.MODE_UNSUPPORTED.code(), error.getCode());
     }
 
     @Test

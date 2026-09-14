@@ -3,6 +3,7 @@ package com.genchat.agent.core;
 import com.agent.foundation.core.ReactAgent;
 import com.agent.foundation.model.RunnableParams;
 import com.genchat.application.agent.PersistentChatAgent;
+import com.genchat.application.audit.AgentAuditSupport;
 import com.genchat.application.stream.AgentStreamLifecycle;
 import com.genchat.application.stream.PersistentChatMemoryLoader;
 import com.genchat.common.AgentStreamEvent;
@@ -185,11 +186,24 @@ public abstract class AbstractReactAgent implements PersistentChatAgent {
                 this::recordFirstResponse,
                 () -> hasSentFinalResult.set(true),
                 () -> {
-                    AgentStreamLifecycle.logStreamBuffers(buffers);
-                    sessionService.update(currentSessionId, buffers.finalAnswer(),
-                            buffers.thinking(), agentState, getTotalResponseTime(),
-                            firstResponseTime, JacksonJson.toJson(toolRecords),
-                            currentRecommendations, getAgentType(), null);
+                    long totalResponseTime = getTotalResponseTime();
+                    AgentAuditSupport.persistSession(
+                            sessionService,
+                            currentSessionId,
+                            buffers,
+                            agentState,
+                            totalResponseTime,
+                            firstResponseTime,
+                            JacksonJson.toJson(toolRecords),
+                            currentRecommendations,
+                            getAgentType(),
+                            null);
+                    AgentAuditSupport.logCompletion(
+                            log,
+                            getAgentType(),
+                            conversationId,
+                            totalResponseTime,
+                            firstResponseTime);
                 });
     }
 

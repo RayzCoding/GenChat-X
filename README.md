@@ -130,6 +130,32 @@ cd frontend && npm install && npm run dev
 
 支持的 `mode`：`chat`(默认)、`simple`、`file`、`deep`、`ppt`、`skills`。
 
+参数矩阵：
+
+| mode | 必填参数 | 可选参数 | 说明 |
+|------|----------|----------|------|
+| `chat` | `question` + `conversationId` | `conversationsId` | 联网/普通对话（默认模式） |
+| `simple` | `question` | `conversationId` | 单轮无记忆回答 |
+| `file` | `question` + `conversationId` + `fileId` | `conversationsId` | 文件问答 |
+| `deep` | `question` + `conversationId` | `conversationsId` | 深度研究（独立执行器） |
+| `ppt` | `question` | `conversationId` + `conversationsId` | PPT 工作流（独立执行器） |
+| `skills` | `question` | `conversationId` + `conversationsId` + `fileId` | Skills 工具协同 |
+
+兼容字段说明：
+
+- `question` 与 `query` 二选一（优先 `question`）
+- `conversationId` 与 `conversationsId` 二选一（优先 `conversationId`）
+
+统一错误码（请求校验）：
+
+| code | 含义 |
+|------|------|
+| `40001` | request is null |
+| `40002` | question is null or empty |
+| `40003` | conversationId is null or empty |
+| `40004` | fileId is null or empty |
+| `40005` | unsupported mode |
+
 更多前端说明见 [`frontend/README.md`](frontend/README.md)。
 
 ## 🛠️ 技术栈

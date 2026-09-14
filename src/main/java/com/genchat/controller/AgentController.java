@@ -24,9 +24,14 @@ public class AgentController {
 
     @PostMapping(value = "/stream", produces = "text/event-stream;charset=UTF-8")
     public Flux<String> unifiedStream(@RequestBody UnifiedAgentStreamRequest request) {
-        log.info("received request to unified stream, mode: {}, conversationId: {}",
+        var resolvedConversationId = request != null
+                ? StreamRequestValidator.resolveConversationId(request.conversationId(), request.conversationsId())
+                : null;
+        log.info("agent.stream.request mode={} conversationId={} fileId={} questionLength={}",
                 request != null ? request.mode() : null,
-                request != null ? StreamRequestValidator.resolveConversationId(request.conversationId(), request.conversationsId()) : null);
+                resolvedConversationId,
+                request != null ? request.fileId() : null,
+                request != null && request.resolvedQuestion() != null ? request.resolvedQuestion().length() : 0);
         var error = StreamRequestValidator.validateUnifiedStreamFlux(request);
         if (error != null) {
             return error;
@@ -37,8 +42,8 @@ public class AgentController {
     @GetMapping(value = "/chat/stream", produces = "text/event-stream;charset=UTF-8")
     public Flux<String> chat(@RequestParam String conversationId,
                              @RequestParam String question) {
-        log.info("received request to chat stream, conversationId: {}, question: {}",
-                conversationId, question);
+        log.info("agent.stream.request mode=chat conversationId={} questionLength={}",
+                conversationId, question != null ? question.length() : 0);
         var error = StreamRequestValidator.requireConversationAndQuestionFlux(conversationId, question);
         if (error != null) {
             return error;
@@ -51,7 +56,8 @@ public class AgentController {
                                    @RequestParam(required = false) String conversationId,
                                    @RequestParam(required = false) String conversationsId) {
         var resolvedConversationId = StreamRequestValidator.resolveConversationId(conversationId, conversationsId);
-        log.info("Receive question, question: {}, conversationId: {}", question, resolvedConversationId);
+        log.info("agent.stream.request mode=deep conversationId={} questionLength={}",
+                resolvedConversationId, question != null ? question.length() : 0);
         var questionError = StreamRequestValidator.requireQuestionFlux(question);
         if (questionError != null) {
             return questionError;
@@ -65,7 +71,8 @@ public class AgentController {
 
     @GetMapping(value = "/simple/stream", produces = "text/event-stream;charset=UTF-8")
     public Flux<String> simpleChat(@RequestParam String question) {
-        log.info("received request to simple chat stream, question: {}", question);
+        log.info("agent.stream.request mode=simple conversationId={} questionLength={}",
+                "", question != null ? question.length() : 0);
         var error = StreamRequestValidator.requireQuestionFlux(question);
         if (error != null) {
             return error;
@@ -77,8 +84,8 @@ public class AgentController {
     public Flux<String> fileStream(@RequestParam String question,
                                    @RequestParam String conversationId,
                                    @RequestParam String fileId) {
-        log.info("Receive file question, question: {}, conversationId: {}, fileId: {}",
-                question, conversationId, fileId);
+        log.info("agent.stream.request mode=file conversationId={} fileId={} questionLength={}",
+                conversationId, fileId, question != null ? question.length() : 0);
         var error = StreamRequestValidator.requireFileStreamParamsFlux(conversationId, question, fileId);
         if (error != null) {
             return error;
@@ -91,7 +98,8 @@ public class AgentController {
                                   @RequestParam(required = false) String conversationId,
                                   @RequestParam(required = false) String conversationsId) {
         var resolvedConversationId = StreamRequestValidator.resolveConversationId(conversationId, conversationsId);
-        log.info("Received ppt question, question: {}, conversationId: {}", question, resolvedConversationId);
+        log.info("agent.stream.request mode=ppt conversationId={} questionLength={}",
+                resolvedConversationId, question != null ? question.length() : 0);
         var error = StreamRequestValidator.requireQuestionFlux(question);
         if (error != null) {
             return error;
@@ -105,8 +113,8 @@ public class AgentController {
                                      @RequestParam(required = false) String conversationsId,
                                      @RequestParam(required = false) String fileId) {
         var resolvedConversationId = StreamRequestValidator.resolveConversationId(conversationId, conversationsId);
-        log.info("Received skills question, question: {}, conversationId: {}, fileId: {}",
-                question, resolvedConversationId, fileId);
+        log.info("agent.stream.request mode=skills conversationId={} fileId={} questionLength={}",
+                resolvedConversationId, fileId, question != null ? question.length() : 0);
         var error = StreamRequestValidator.requireQuestionFlux(question);
         if (error != null) {
             return error;

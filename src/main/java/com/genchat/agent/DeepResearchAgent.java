@@ -1,6 +1,7 @@
 package com.genchat.agent;
 
 import com.genchat.application.agent.PersistentChatAgent;
+import com.genchat.application.audit.AgentAuditSupport;
 import com.genchat.application.stream.AgentStreamLifecycle;
 import com.genchat.application.stream.PersistentChatMemoryLoader;
 import com.genchat.common.utils.JacksonJson;
@@ -69,13 +70,12 @@ public class DeepResearchAgent implements PersistentChatAgent {
                 () -> DeepResearchStreams.recordFirstResponse(ctx),
                 () -> finished.set(true),
                 () -> {
-                    log.info("Agent has finished, conversationId: {}", conversationsId);
                     finished.set(true);
                     var totalResponseTime = System.currentTimeMillis() - ctx.getStartTime();
-                    deps.sessionService().update(
+                    AgentAuditSupport.persistSession(
+                            deps.sessionService(),
                             ctx.getCurrentSessionId(),
-                            buffers.finalAnswer(),
-                            buffers.thinking(),
+                            buffers,
                             null,
                             totalResponseTime,
                             ctx.getFirstResponseTime(),
@@ -83,6 +83,12 @@ public class DeepResearchAgent implements PersistentChatAgent {
                             null,
                             deps.agentType(),
                             AgentStreamEvent.Reference.of(JacksonJson.toJson(ctx.getAllReferences())).toJSON());
+                    AgentAuditSupport.logCompletion(
+                            log,
+                            deps.agentType(),
+                            conversationsId,
+                            totalResponseTime,
+                            ctx.getFirstResponseTime());
                     ctx.getCompositeDisposable().dispose();
                 });
     }
