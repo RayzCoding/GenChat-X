@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -36,7 +37,11 @@ class AbstractReactAgentEventMappingTest {
                 "[{\"text\":{\"results\":[{\"url\":\"https://example.com\",\"title\":\"Example\",\"content\":\"Body\"}]}}]");
 
         var agentState = new AgentState();
-        agent.applyEvent(new AgentStreamEvent(AgentStreamEvent.Type.TOOL_EXECUTED, payload), sink, new AtomicBoolean(false), agentState);
+        agent.applyEvent(new AgentStreamEvent(AgentStreamEvent.Type.TOOL_EXECUTED, payload),
+                sink,
+                new AtomicBoolean(false),
+                new AtomicBoolean(false),
+                agentState);
 
         assertEquals(2, emitted.size());
         assertTrue(emitted.get(0).contains("\"type\":\"tool_start\""));
@@ -59,12 +64,64 @@ class AbstractReactAgentEventMappingTest {
         sink.asFlux().doOnNext(chunk -> emitted.add(chunk)).subscribe();
 
         var agentState = new AgentState();
-        agent.applyEvent(new AgentStreamEvent(AgentStreamEvent.Type.REASONING, "planning..."), sink, new AtomicBoolean(false), agentState);
-
+        agent.applyEvent(new AgentStreamEvent(AgentStreamEvent.Type.REASONING, "planning..."),
+                sink,
+                new AtomicBoolean(false),
+                new AtomicBoolean(false),
+                agentState);
         assertEquals(1, emitted.size());
         assertTrue(emitted.get(0).contains("\"type\":\"thinking\""));
         assertTrue(emitted.get(0).contains("planning..."));
     }
+
+    @Test
+    void textDeltaEventIsForwardedAsTextChunk() {
+        var agent = new TestAgent();
+        Sinks.Many<String> sink = Sinks.many().unicast().onBackpressureBuffer();
+        var emitted = new ArrayList<String>();
+        sink.asFlux().doOnNext(emitted::add).subscribe();
+
+        var agentState = new AgentState();
+        agent.applyEvent(new AgentStreamEvent(AgentStreamEvent.Type.TEXT_DELTA, "hello"),
+                sink,
+                new AtomicBoolean(false),
+                new AtomicBoolean(false),
+                agentState);
+
+        assertEquals(1, emitted.size());
+        assertTrue(emitted.getFirst().contains("\"type\":\"text\""));
+        assertTrue(emitted.getFirst().contains("hello"));
+    }
+
+    @Test
+    void completedAfterTextDeltaDoesNotDuplicateFinalText() {
+        var agent = new TestAgent();
+        Sinks.Many<String> sink = Sinks.many().unicast().onBackpressureBuffer();
+        var emitted = new ArrayList<String>();
+        sink.asFlux().doOnNext(emitted::add).subscribe();
+
+        var agentState = new AgentState();
+        var hasSentFinalResult = new AtomicBoolean(false);
+        var hasEmittedTextDelta = new AtomicBoolean(false);
+
+        agent.applyEvent(new AgentStreamEvent(AgentStreamEvent.Type.TEXT_DELTA, "成都"),
+                sink,
+                hasSentFinalResult,
+                hasEmittedTextDelta,
+                agentState);
+        agent.applyEvent(new AgentStreamEvent(AgentStreamEvent.Type.COMPLETED, "成都天气"),
+                sink,
+                hasSentFinalResult,
+                hasEmittedTextDelta,
+                agentState);
+
+        assertEquals(2, emitted.size());
+        assertTrue(emitted.get(0).contains("\"type\":\"text\""));
+        assertTrue(emitted.get(0).contains("成都"));
+        assertTrue(emitted.get(1).contains("\"type\":\"complete\""));
+        assertFalse(emitted.get(1).contains("成都天气"));
+    }
+
 
     private static final class TestAgent extends AbstractReactAgent {
 
@@ -95,8 +152,9 @@ class AbstractReactAgentEventMappingTest {
         void applyEvent(AgentStreamEvent event,
                         Sinks.Many<String> sink,
                         AtomicBoolean hasSentFinalResult,
+                        AtomicBoolean hasEmittedTextDelta,
                         AgentState agentState) {
-            handleFoundationEvent(event, sink, hasSentFinalResult, "c1", agentState);
+            handleFoundationEvent(event, sink, hasSentFinalResult, hasEmittedTextDelta, "c1", agentState);
         }
 
         List<ToolRecord> records() {

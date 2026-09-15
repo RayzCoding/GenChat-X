@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * It does not contain any conversational memory and only answers the current question
@@ -50,12 +51,18 @@ public class SimpleReactAgent {
                 maxRounds,
                 0,
                 contextCompactor != null);
+        var hasTextDelta = new AtomicBoolean(false);
 
         return foundationAgent
                 .streamForEvents(foundationQuestion, RunnableParams.builder().build())
                 .flatMap(event -> switch (event.type()) {
-                    case COMPLETED -> Flux.just(event.content());
+                    case TEXT_DELTA -> {
+                        hasTextDelta.set(true);
+                        yield Flux.just(event.content());
+                    }
+                    case COMPLETED -> hasTextDelta.get() ? Flux.empty() : Flux.just(event.content());
                     case REASONING_CONTENT, RETRY, PAUSED -> Flux.just(event.content() + "\n");
+                    case REASONING_DELTA -> Flux.just(event.content());
                     case ERROR -> Flux.error(new IllegalStateException(event.content()));
                     default -> Flux.empty();
                 })

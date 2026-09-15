@@ -146,6 +146,7 @@ public abstract class AbstractReactAgent implements PersistentChatAgent {
         currentQuestion = question;
 
         var hasSentFinalResult = new AtomicBoolean(false);
+        var hasEmittedTextDelta = new AtomicBoolean(false);
         var buffers = AgentStreamLifecycle.StreamBuffers.create();
         var agentState = createAgentState();
 
@@ -160,7 +161,13 @@ public abstract class AbstractReactAgent implements PersistentChatAgent {
                         foundationQuestion,
                         RunnableParams.builder().conversationId(conversationId).build())
                 .publishOn(Schedulers.boundedElastic())
-                .doOnNext(event -> handleFoundationEvent(event, sink, hasSentFinalResult, conversationId, agentState))
+                .doOnNext(event -> handleFoundationEvent(
+                        event,
+                        sink,
+                        hasSentFinalResult,
+                        hasEmittedTextDelta,
+                        conversationId,
+                        agentState))
                 .doOnError(error -> {
                     if (!hasSentFinalResult.get()) {
                         hasSentFinalResult.set(true);
@@ -214,6 +221,7 @@ public abstract class AbstractReactAgent implements PersistentChatAgent {
     protected void handleFoundationEvent(com.agent.foundation.model.AgentStreamEvent event,
                                          Sinks.Many<String> sink,
                                          AtomicBoolean hasSentFinalResult,
+                                         AtomicBoolean hasEmittedTextDelta,
                                          String conversationId,
                                          AgentState agentState) {
         if (event == null || hasSentFinalResult.get()) {
@@ -236,6 +244,17 @@ public abstract class AbstractReactAgent implements PersistentChatAgent {
             case REASONING_CONTENT -> {
                 if (StringUtils.hasLength(event.content())) {
                     sink.tryEmitNext(new AgentStreamEvent.Thinking(event.content() + "\n").toJSON());
+                }
+            }
+            case TEXT_DELTA -> {
+                if (StringUtils.hasLength(event.content())) {
+                    hasEmittedTextDelta.set(true);
+                    sink.tryEmitNext(new AgentStreamEvent.Text(event.content()).toJSON());
+                }
+            }
+            case REASONING_DELTA -> {
+                if (StringUtils.hasLength(event.content())) {
+                    sink.tryEmitNext(new AgentStreamEvent.Thinking(event.content()).toJSON());
                 }
             }
             case RETRY, PAUSED -> sink.tryEmitNext(new AgentStreamEvent.Thinking(event.content() + "\n").toJSON());
@@ -261,7 +280,7 @@ public abstract class AbstractReactAgent implements PersistentChatAgent {
             case COMPLETED -> {
                 hasSentFinalResult.set(true);
                 var finalText = event.content();
-                if (StringUtils.hasLength(finalText)) {
+                if (!hasEmittedTextDelta.get() && StringUtils.hasLength(finalText)) {
                     sink.tryEmitNext(new AgentStreamEvent.Text(finalText).toJSON());
                 }
                 onNonToolFinish(finalText, sink, conversationId, agentState);
