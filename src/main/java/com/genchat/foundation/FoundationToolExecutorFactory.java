@@ -4,6 +4,7 @@ import com.agent.foundation.tool.DefaultToolExecutor;
 import com.agent.foundation.tool.ToolDefinition;
 import com.agent.foundation.tool.ToolExecutor;
 import com.genchat.common.utils.JacksonJson;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.ToolCallback;
 
 import java.util.Collection;
@@ -14,6 +15,7 @@ import java.util.Objects;
 /**
  * Bridges Spring AI ToolCallback into foundation ToolExecutor.
  */
+@Slf4j
 public final class FoundationToolExecutorFactory {
 
     private FoundationToolExecutorFactory() {
@@ -42,9 +44,13 @@ public final class FoundationToolExecutorFactory {
     private static String invokeCallback(String toolName, ToolCallback callback, Map<String, Object> args) {
         try {
             String request = JacksonJson.toJson(args == null ? Map.of() : args);
+            log.info("tool.callback.invoke toolName={} args={}", toolName, request);
             Object result = callback.call(request);
-            return FoundationToolPayloads.encode(toolName, args, null, normalizeResult(result));
+            String normalized = normalizeResult(result);
+            log.info("tool.callback.success toolName={} resultLength={}", toolName, normalized == null ? 0 : normalized.length());
+            return FoundationToolPayloads.encode(toolName, args, null, normalized);
         } catch (Exception ex) {
+            log.warn("tool.callback.failed toolName={} error={}", toolName, ex.getMessage());
             return FoundationToolPayloads.encode(
                     toolName,
                     args,

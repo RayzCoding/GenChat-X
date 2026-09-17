@@ -69,7 +69,7 @@ public class DeepResearchPreparation {
                 0,
                 true);
         var disposable = agent.streamForEvents(
-                        renderMessages(messages),
+                        messages,
                         RunnableParams.builder().conversationId(overAllState.getConversationId()).build())
                 .doOnNext(chunk -> {
                     if (chunk == null) {
@@ -121,7 +121,7 @@ public class DeepResearchPreparation {
                 0,
                 true);
         var disposable = agent.streamForEvents(
-                        renderMessages(messages),
+                        messages,
                         RunnableParams.builder().conversationId(overAllState.getConversationId()).build())
                 .doOnNext(chunk -> {
                     if (chunk == null) {
@@ -174,13 +174,4 @@ public class DeepResearchPreparation {
         onComplete.run();
     }
 
-    private String renderMessages(java.util.List<Message> messages) {
-        StringBuilder sb = new StringBuilder();
-        for (Message message : messages) {
-            sb.append('[').append(message.getMessageType()).append("]\n")
-                    .append(message.getText() == null ? "" : message.getText())
-                    .append("\n\n");
-        }
-        return sb.toString();
-    }
 }

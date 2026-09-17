@@ -83,7 +83,7 @@ public class AiChatSessionService extends ServiceImpl<AiChatSessionRepository, A
         wrapper.eq(AiChatSessionEntity::getId, id)
                 .set(AiChatSessionEntity::getAnswer, finalAnswerBuffer.toString())
                 .set(StringUtils.hasLength(thinkingBuffer.toString()), AiChatSessionEntity::getThinking, thinkingBuffer.toString())
-                .set(StringUtils.hasLength(usedToolsString), AiChatSessionEntity::getTools, usedToolsString)
+                .set(AiChatSessionEntity::getTools, usedToolsString)
                 .set(StringUtils.hasLength(referenceJson), AiChatSessionEntity::getReference, referenceJson)
                 .set(StringUtils.hasLength(currentRecommendations),
                         AiChatSessionEntity::getRecommend,

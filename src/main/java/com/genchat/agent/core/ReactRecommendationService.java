@@ -4,14 +4,13 @@ import com.agent.foundation.model.RunnableParams;
 import com.genchat.common.prompts.ReactAgentPrompts;
 import com.genchat.common.utils.JacksonJson;
 import com.genchat.foundation.FoundationReactAgentFactory;
+import com.genchat.service.session.SessionPayloadParser;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -40,14 +39,12 @@ public final class ReactRecommendationService {
                 messages.add(new AssistantMessage(currentAnswer));
             }
 
-            var converter = new BeanOutputConverter<List<String>>(new ParameterizedTypeReference<>() {
-            });
-            messages.add(new UserMessage("Please generate 3 recommended questions based on the above dialogue. The output format is as follows：\n"
-                    + converter.getFormat()));
+            messages.add(new UserMessage("Please generate exactly 3 recommended questions based on the above dialogue. "
+                    + "Return only a valid JSON array of 3 strings. No markdown fences, no schema, no extra explanation."));
             var agent = FoundationReactAgentFactory.create(chatModel, List.of(), 3, 0, false);
-            var response = agent.callForResult(renderMessages(messages), RunnableParams.builder().build()).content();
+            var response = agent.callForResult(messages, RunnableParams.builder().build()).content();
             if (response != null && !response.isEmpty()) {
-                List<String> recommendations = converter.convert(response);
+                List<String> recommendations = SessionPayloadParser.parseRecommend(response);
                 if (!CollectionUtils.isEmpty(recommendations)) {
                     var jsonStr = JacksonJson.toJson(recommendations);
                     log.info("The recommendation question has been successfully generated: {}", jsonStr);
@@ -62,13 +59,4 @@ public final class ReactRecommendationService {
         }
     }
 
-    private static String renderMessages(List<Message> messages) {
-        StringBuilder sb = new StringBuilder();
-        for (Message message : messages) {
-            sb.append('[').append(message.getMessageType()).append("]\n")
-                    .append(message.getText() == null ? "" : message.getText())
-                    .append("\n\n");
-        }
-        return sb.toString();
-    }
 }

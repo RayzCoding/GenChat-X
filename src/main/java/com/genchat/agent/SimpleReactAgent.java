@@ -12,12 +12,16 @@ import com.genchat.foundation.FoundationToolPayloads;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -44,7 +48,7 @@ public class SimpleReactAgent {
     }
 
     public Flux<String> stream(String question) {
-        var foundationQuestion = buildFoundationQuestion(question);
+        var foundationMessages = buildFoundationMessages(question);
         var foundationAgent = FoundationReactAgentFactory.create(
                 chatModel,
                 tools,
@@ -54,7 +58,7 @@ public class SimpleReactAgent {
         var hasTextDelta = new AtomicBoolean(false);
 
         return foundationAgent
-                .streamForEvents(foundationQuestion, RunnableParams.builder().build())
+                .streamForEvents(foundationMessages, RunnableParams.builder().build())
                 .flatMap(event -> switch (event.type()) {
                     case TEXT_DELTA -> {
                         hasTextDelta.set(true);
@@ -66,7 +70,7 @@ public class SimpleReactAgent {
                     case ERROR -> Flux.error(new IllegalStateException(event.content()));
                     default -> Flux.empty();
                 })
-                .filter(text -> StringUtils.hasLength(text));
+                .filter(StringUtils::hasLength);
     }
 
     public SimpleReactResult executeInternal(String conversationId, String question, boolean withReference) {
@@ -77,10 +81,10 @@ public class SimpleReactAgent {
                 maxRounds,
                 0,
                 contextCompactor != null);
-        String foundationQuestion = buildFoundationQuestion(question);
+        var foundationMessages = buildFoundationMessages(question);
 
         String answer = foundationAgent
-                .streamForEvents(foundationQuestion, RunnableParams.builder().conversationId(conversationId).build())
+                .streamForEvents(foundationMessages, RunnableParams.builder().conversationId(conversationId).build())
                 .doOnNext(event -> {
                     if (agentState != null && event.type() == com.agent.foundation.model.AgentStreamEvent.Type.TOOL_EXECUTED) {
                         var payload = FoundationToolPayloads.decode(event.content());
@@ -98,14 +102,14 @@ public class SimpleReactAgent {
                 .build();
     }
 
-    private String buildFoundationQuestion(String question) {
-        StringBuilder prompt = new StringBuilder();
-        prompt.append(PlanExecutePrompts.getCurrentTime()).append("\n\n");
-        prompt.append(ReactAgentPrompts.getReactAgentSystemPrompt()).append("\n\n");
+    private List<Message> buildFoundationMessages(String question) {
+        var messages = new ArrayList<Message>();
+        messages.add(new SystemMessage(PlanExecutePrompts.getCurrentTime()));
+        messages.add(new SystemMessage(ReactAgentPrompts.getReactAgentSystemPrompt()));
         if (StringUtils.hasLength(systemPrompt)) {
-            prompt.append(systemPrompt).append("\n\n");
+            messages.add(new SystemMessage(systemPrompt));
         }
-        prompt.append("<question>").append(question).append("</question>");
-        return prompt.toString();
+        messages.add(new UserMessage("<question>" + question + "</question>"));
+        return messages;
     }
 }

@@ -207,7 +207,7 @@ public class ContextCompactor {
             promptMessages.add(new SystemMessage(ReactAgentPrompts.getCompactSummarySystemPrompt()));
             promptMessages.add(new UserMessage(ReactAgentPrompts.getCompactSummaryUserPrompt(conversationText, currentQuestion)));
             var agent = FoundationReactAgentFactory.create(chatModel, List.of(), 3, 0, false);
-            String summary = agent.callForResult(renderMessages(promptMessages), RunnableParams.builder().build()).content();
+            String summary = agent.callForResult(promptMessages, RunnableParams.builder().build()).content();
             summary = ThinkTagParser.stripThinkTags(summary);
 
             log.info("Context summary generated: {} chars input -> {} chars summary",
@@ -220,15 +220,6 @@ public class ContextCompactor {
         }
     }
 
-    private String renderMessages(List<Message> messages) {
-        StringBuilder sb = new StringBuilder();
-        for (Message message : messages) {
-            sb.append('[').append(message.getMessageType()).append("] ")
-                    .append(MessageTextExtractor.extractText(message))
-                    .append("\n\n");
-        }
-        return sb.toString();
-    }
 
     private String truncationFallback(List<Message> messages) {
         int keepCount = policy.truncationKeepMessages();

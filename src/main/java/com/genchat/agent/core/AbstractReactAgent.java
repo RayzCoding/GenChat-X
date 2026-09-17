@@ -12,7 +12,6 @@ import com.genchat.common.utils.JacksonJson;
 import com.genchat.dto.AiChatSession;
 import com.genchat.agent.model.AgentState;
 import com.genchat.context.ContextCompactor;
-import com.genchat.context.MessageTextExtractor;
 import com.genchat.foundation.FoundationReactAgentFactory;
 import com.genchat.foundation.FoundationToolPayloads;
 import com.genchat.service.AgentTaskService;
@@ -136,13 +135,16 @@ public abstract class AbstractReactAgent implements PersistentChatAgent {
         var aiChatSession = sessionService.saveQuestion(buildSessionForSave(request));
         currentSessionId = aiChatSession.getId();
 
-        List<Message> historyMessages = Collections.synchronizedList(new ArrayList<>());
-        loadChatHistory(conversationId, historyMessages, true, true);
+        List<Message> messages = Collections.synchronizedList(new ArrayList<>());
+        messages.add(new SystemMessage(getPrimarySystemPrompt()));
+        if (StringUtils.hasLength(systemPrompt)) {
+            messages.add(new SystemMessage(systemPrompt));
+        }
+        loadChatHistory(conversationId, messages, true, true);
 
-        var extraMessages = new ArrayList<Message>();
-        appendExtraUserMessages(extraMessages, request);
+        messages.add(new UserMessage("<question>" + question + "</question>"));
+        appendExtraUserMessages(messages, request);
 
-        String foundationQuestion = buildFoundationQuestion(question, historyMessages, extraMessages);
         currentQuestion = question;
 
         var hasSentFinalResult = new AtomicBoolean(false);
@@ -158,7 +160,7 @@ public abstract class AbstractReactAgent implements PersistentChatAgent {
                 contextCompactor != null);
 
         foundationAgent.streamForEvents(
-                        foundationQuestion,
+                        messages,
                         RunnableParams.builder().conversationId(conversationId).build())
                 .publishOn(Schedulers.boundedElastic())
                 .doOnNext(event -> handleFoundationEvent(
@@ -264,6 +266,12 @@ public abstract class AbstractReactAgent implements PersistentChatAgent {
                 String toolCallId = payload.toolCallId();
                 String argumentsJson = payload.argumentsJson();
                 String result = payload.result();
+                log.info("agent.tool.event conversationId={} toolName={} toolCallId={} argsLength={} resultLength={}",
+                        conversationId,
+                        toolName,
+                        toolCallId,
+                        argumentsJson == null ? 0 : argumentsJson.length(),
+                        result == null ? 0 : result.length());
                 sink.tryEmitNext(new AgentStreamEvent.ToolStart(toolName, toolCallId, argumentsJson).toJSON());
                 sink.tryEmitNext(new AgentStreamEvent.ToolEnd(toolName, toolCallId, result).toJSON());
                 toolRecords.add(new ToolRecord(toolName, toolCallId, argumentsJson, result));
@@ -308,44 +316,6 @@ public abstract class AbstractReactAgent implements PersistentChatAgent {
         return "Conversation history：";
     }
 
-    private String buildFoundationQuestion(String question,
-                                           List<Message> baseMessages,
-                                           List<Message> extraMessages) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<genchat_context>\n");
-        appendSection(sb, "system", getPrimarySystemPrompt());
-        appendSection(sb, "system_extra", systemPrompt);
-        appendMessageSection(sb, "history", baseMessages);
-        appendMessageSection(sb, "extra", extraMessages);
-        appendSection(sb, "question", "<question>" + question + "</question>");
-        sb.append("</genchat_context>");
-        return sb.toString();
-    }
-
-    private void appendSection(StringBuilder sb, String tag, String content) {
-        if (!StringUtils.hasLength(content)) {
-            return;
-        }
-        sb.append('<').append(tag).append('>').append('\n');
-        sb.append(content).append('\n');
-        sb.append("</").append(tag).append('>').append('\n');
-    }
-
-    private void appendMessageSection(StringBuilder sb, String tag, List<Message> messages) {
-        if (ObjectUtils.isEmpty(messages)) {
-            return;
-        }
-        sb.append('<').append(tag).append('>').append('\n');
-        for (Message message : messages) {
-            if (message == null) {
-                continue;
-            }
-            sb.append('[').append(message.getMessageType()).append("] ")
-                    .append(MessageTextExtractor.extractText(message))
-                    .append('\n');
-        }
-        sb.append("</").append(tag).append('>').append('\n');
-    }
 
     private void loadChatHistory(String conversationId, List<Message> messages, boolean skipSystem, boolean addLabel) {
         var historyMessages = buildHistoryMessages(conversationId, skipSystem, addLabel);

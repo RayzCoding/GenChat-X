@@ -46,7 +46,7 @@ public class RequirementStrategy implements PptStateStrategy {
                 0,
                 true);
         var disposable = agent.streamForEvents(
-                        renderMessages(messages),
+                        messages,
                         RunnableParams.builder().conversationId(conversationId).build())
                 .doOnNext(chunk -> {
                     if (chunk == null) {
@@ -107,15 +107,5 @@ public class RequirementStrategy implements PptStateStrategy {
     @Override
     public PptInstStatus getTargetStatus() {
         return TARGET_STATUS;
-    }
-
-    private String renderMessages(java.util.List<Message> messages) {
-        StringBuilder sb = new StringBuilder();
-        for (Message message : messages) {
-            sb.append('[').append(message.getMessageType()).append("]\n")
-                    .append(message.getText() == null ? "" : message.getText())
-                    .append("\n\n");
-        }
-        return sb.toString();
     }
 }
