@@ -1,15 +1,16 @@
 package com.genchat.agent;
 
-import com.agent.foundation.model.RunnableParams;
+import com.agent.foundation.core.SpringAiChatModelAdapter;
+import com.agent.foundation.output.StructuredOutputSupport;
+import com.genchat.common.validation.StructuredResults;
 import com.genchat.common.prompts.PptBuilderPrompts;
 import com.genchat.dto.PptIntent;
 import com.genchat.dto.PptIntentResult;
 import com.genchat.entity.PptInstStatus;
-import com.genchat.foundation.FoundationReactAgentFactory;
 import com.genchat.service.AiPptInstService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
@@ -52,18 +53,8 @@ public class PptIntentRecognizer {
 
     private PptIntentResult recognizeWithLLM(String question) {
         var recognitionPrompt = PptBuilderPrompts.INTENT_RECOGNITION_PROMPT;
-        var converter = new BeanOutputConverter<PptIntentResult>(new ParameterizedTypeReference<>() {});
-        try {
-            var agent = FoundationReactAgentFactory.create(chatModel, java.util.List.of(), 3, 0, false);
-            var result = agent.callForResult(
-                    recognitionPrompt + "\n\n<question>" + question + "</question>",
-                    RunnableParams.builder().build());
-            var content = result.content();
-            log.info("Conversation recognition prompt. content: {}", content);
-            return converter.convert(content);
-        }catch (Exception e) {
-            return new PptIntentResult(PptIntent.CREATE_PPT, "If the intent recognition fails, it will be created by default");
-        }
+        return StructuredOutputSupport.generate(new SpringAiChatModelAdapter(chatModel),
+                java.util.List.of(new SystemMessage(recognitionPrompt), new UserMessage(question)), StructuredResults.intent());
     }
 
     private boolean needsResume(PptInstStatus pptInstStatus, String errorMsg, String question) {

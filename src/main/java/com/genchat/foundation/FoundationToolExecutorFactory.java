@@ -36,7 +36,8 @@ public final class FoundationToolExecutorFactory {
                 continue;
             }
             String description = Objects.toString(callback.getToolDefinition().description(), "");
-            executor.register(new ToolDefinition(name, description, false), args -> invokeCallback(name, callback, args));
+            executor.register(new ToolDefinition(name, description, false, callback.getToolDefinition().inputSchema()),
+                    args -> invokeCallback(name, callback, args));
         }
         return executor;
     }
@@ -55,7 +56,7 @@ public final class FoundationToolExecutorFactory {
                     toolName,
                     args,
                     null,
-                    "{\"error\":\"" + sanitize(ex.getMessage()) + "\"}");
+                    JacksonJson.toJson(Map.of("error", Objects.toString(ex.getMessage(), "tool execution failed"))));
         }
     }
 
@@ -72,11 +73,5 @@ public final class FoundationToolExecutorFactory {
         return Objects.toString(result, "");
     }
 
-    private static String sanitize(String value) {
-        if (value == null || value.isBlank()) {
-            return "tool execution failed";
-        }
-        return value.replace('"', '\'');
-    }
 }
 

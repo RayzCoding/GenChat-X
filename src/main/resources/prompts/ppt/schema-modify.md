@@ -18,10 +18,9 @@
                     {
                       "pageType": "Page type (uppercase)",
                       "pageDesc": "Page description",
-                      "templatePageIndex": template page index,
+                      "templatePageIndex": 1,
                       "data": {
-                        "fieldName": { ... },
-                        ...
+                        "fieldName": {"type": "text", "content": "Title", "fontLimit": 10}
                       }
                     }
                   ]
@@ -32,8 +31,8 @@
                 ### type = "text" (text field)
                 {
                   "type": "text",
-                  "content": "Actual text content (character count must be <= fontLimit)",
-                  "fontLimit": number
+                  "content": "Title",
+                  "fontLimit": 10
                 }
 
                 Hard requirements:
@@ -48,7 +47,7 @@
                 {
                   "type": "image",
                   "content": "Image generation prompt describing what kind of image to generate",
-                  "url": "" (keep original value or empty)
+                  "url": ""
                 }
 
                 - type fixed value is "image"
@@ -59,12 +58,12 @@
                 {
                   "type": "background",
                   "content": "Image generation prompt, background images generally focus on layout without text",
-                  "url": "" (default empty)
+                  "url": ""
                 }
 
                 - type fixed value is "background"
                 - content: image generation prompt, background images generally focus on layout without text
-                - url: image URL address for replacing the corresponding image in the template, default empty string
+                - url: keep the original background URL unless the user requests replacement. For replacement, provide a new generation prompt and an empty URL.
 
                 ## Modification Rules
                 1. Strictly generate according to original Schema defined field names and types
@@ -77,7 +76,7 @@
                    - Must calculate before outputting
                    - Violation is considered failure
                 7. If user requests replacing image or background, set url to empty string, keep content as generation prompt
-                8. If user only modifies text, keep image url unchanged
+                8. If user only modifies text, keep image and background content/url unchanged
                 9. Keep parts that do not need modification as-is
 
                 ## Pre-output Self-check
@@ -96,7 +95,7 @@
                 2. slides array order remains unchanged
                 3. Field names must exactly match the original Schema
                 4. Field type values must be correct (can only be one of text/image/background)
-                5. Each field must contain required properties (text: type+content+fontLimit, image: type+content+url, background: type+content+url)
+                5. Text fields require type+content+fontLimit. Image/background URLs may be omitted or null when no URL exists; retain existing URLs unless replacing the image.
                 6. fontLimit must be strictly guaranteed, not allowed to exceed
                 7. Strictly generate according to Schema defined field names and types
                 

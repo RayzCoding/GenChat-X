@@ -46,7 +46,7 @@ public class DeepResearchPlanLoop {
         ctx.getCompositeDisposable().add(disposable);
     }
 
-    private Mono<Void> executeLoop(DeepResearchRunContext ctx,
+    Mono<Void> executeLoop(DeepResearchRunContext ctx,
                                    OverAllState overAllState,
                                    Sinks.Many<String> sink,
                                    AtomicBoolean finished,
@@ -79,14 +79,22 @@ public class DeepResearchPlanLoop {
                         return;
                     }
 
+                    if (critique.passed()) {
+                        break;
+                    }
                     overAllState.add(new AssistantMessage("""
                             【Critique Feedback】
                             %s
                             """.formatted(critique.feedback())));
-                    DeepResearchStreams.emitThinking(sink, finished, "\n--- Preparing next iteration ---\n");
-                    reporter.compressIfNeeded(ctx, overAllState, sink, finished);
+                    if (overAllState.getRound() < deps.maxRounds()) {
+                        DeepResearchStreams.emitThinking(sink, finished, "\n--- Preparing next iteration ---\n");
+                        reporter.compressIfNeeded(ctx, overAllState, sink, finished);
+                    }
                 }
 
+                if (ctx.isStopped(finished)) {
+                    return;
+                }
                 DeepResearchStreams.emitThinking(sink, finished,
                         "\n✅ Research phase completed, preparing final report\n");
                 reporter.summarizeStream(ctx, overAllState, sink, finished, finalAnswerBuffer);

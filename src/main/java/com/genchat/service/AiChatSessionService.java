@@ -3,7 +3,7 @@ package com.genchat.service;
 import com.genchat.common.utils.JacksonJson;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.genchat.common.AgentStreamEvent;
 import com.genchat.converter.AiChatSessionConverter;
 import com.genchat.dto.AiChatSession;

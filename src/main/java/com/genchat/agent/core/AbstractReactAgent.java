@@ -163,29 +163,27 @@ public abstract class AbstractReactAgent implements PersistentChatAgent {
                         messages,
                         RunnableParams.builder().conversationId(conversationId).build())
                 .publishOn(Schedulers.boundedElastic())
-                .doOnNext(event -> handleFoundationEvent(
+                .subscribe(event -> handleFoundationEvent(
                         event,
                         sink,
                         hasSentFinalResult,
                         hasEmittedTextDelta,
                         conversationId,
-                        agentState))
-                .doOnError(error -> {
+                        agentState), error -> {
+                    log.error("agent.stream.failed conversationId={}", conversationId, error);
                     if (!hasSentFinalResult.get()) {
                         hasSentFinalResult.set(true);
                         sink.tryEmitNext(AgentStreamEvent.Error.simple(error.getMessage()).toJSON());
                         sink.tryEmitNext(new AgentStreamEvent.Complete().toJSON());
                         sink.tryEmitComplete();
                     }
-                })
-                .doOnComplete(() -> {
+                }, () -> {
                     if (!hasSentFinalResult.get()) {
                         hasSentFinalResult.set(true);
                         sink.tryEmitNext(new AgentStreamEvent.Complete().toJSON());
                         sink.tryEmitComplete();
                     }
-                })
-                .subscribe();
+                });
 
         return AgentStreamLifecycle.attach(
                 started.flux(),

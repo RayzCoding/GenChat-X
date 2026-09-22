@@ -18,10 +18,9 @@
                     {
                       "pageType": "Page type (uppercase)",
                       "pageDesc": "Page description",
-                      "templatePageIndex": template page index,
+                      "templatePageIndex": 1,
                       "data": {
-                        "fieldName": { ... },
-                        ...
+                        "fieldName": {"type": "text", "content": "Title", "fontLimit": 10}
                       }
                     }
                   ]
@@ -32,8 +31,8 @@
                 ### type = "text" (text field)
                 {
                   "type": "text",
-                  "content": "Actual text content (character count must be <= fontLimit)",
-                  "fontLimit": number
+                  "content": "Title",
+                  "fontLimit": 10
                 }
 
                 Hard requirements:
@@ -48,7 +47,7 @@
                 {
                   "type": "image",
                   "content": "Image generation prompt describing what kind of image to generate",
-                  "url": "" (default empty)
+                  "url": ""
                 }
 
                 - type fixed value is "image"
@@ -59,7 +58,7 @@
                 {
                   "type": "background",
                   "content": "Image generation prompt, background images generally focus on layout without text",
-                  "url": "" (default empty)
+                  "url": ""
                 }
 
                 - type fixed value is "background"
@@ -92,9 +91,9 @@
                 ## Error Example (prohibited)
                 fontLimit=7
                 content="Artificial Intelligence Trends"
-                Character count=8 > 7 -> Erroneous output
+                Character count=30 > 7 -> Erroneous output
                 Must be rewritten as:
-                "AI Trends"
+                "AI Tech" (7 characters)
 
                 ## Example (for reference only, field names and structure vary based on template Schema)
                 {
@@ -106,7 +105,7 @@
                       "data": {
                         "title": {
                           "type": "text",
-                          "content": "AI Tech Development",
+                          "content": "AI Tech",
                           "fontLimit": 7
                         },
                         "description": {
@@ -129,8 +128,8 @@
                 2. slides array order is the final PPT page order
                 3. Field names must exactly match the template Schema
                 4. Field type values must be correct (can only be one of text/image/background)
-                5. Each field must contain required properties (text: type+content+fontLimit, image: type+content+url, background: type+content+url)
-                6. url defaults to empty string
+                5. Each text field requires type+content+fontLimit. Image/background fields require type; provide content when a new image should be generated.
+                6. Image/background url is optional, may be null or empty, and is filled after image generation. With neither a URL nor a generation prompt, the original template image is preserved.
                 7. fontLimit must be strictly guaranteed, not allowed to exceed
                 8. pageType=CATALOG table of contents page generates based on catalog field count
                 9. Unless a field in the Schema explicitly requires type=background, do not generate background fields. Strictly follow the Schema template field definitions

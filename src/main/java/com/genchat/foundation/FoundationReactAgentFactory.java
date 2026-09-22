@@ -2,7 +2,6 @@ package com.genchat.foundation;
 
 import com.agent.foundation.compression.ContextCompressionManager;
 import com.agent.foundation.core.ReactAgent;
-import com.agent.foundation.core.SpringAiChatModelAdapter;
 import com.agent.foundation.retry.RetrySupport;
 import com.agent.foundation.tool.ToolSecurityPolicy;
 import org.springframework.ai.chat.model.ChatModel;
@@ -25,7 +24,7 @@ public final class FoundationReactAgentFactory {
                                     int maxRetries,
                                     boolean enableCompression) {
         ReactAgent.Builder builder = ReactAgent.builder()
-                .chatModelAdapter(new SpringAiChatModelAdapter(chatModel))
+                .chatModelAdapter(new ToolCallbackAwareChatModelAdapter(chatModel, tools))
                 .toolExecutor(FoundationToolExecutorFactory.fromToolCallbacks(tools))
                 .toolSecurityPolicy(ToolSecurityPolicy.permissive())
                 .maxRounds(maxRounds > 0 ? maxRounds : 10);

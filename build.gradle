@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.5.6'
+    id 'org.springframework.boot' version '4.1.0'
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -25,14 +25,19 @@ repositories {
 
 dependencies {
     // Spring Boot
-    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 
     // Spring AI
-    implementation platform('org.springframework.ai:spring-ai-bom:1.1.0')
-    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+    implementation platform('org.springframework.ai:spring-ai-bom:2.0.0')
+    implementation('org.springframework.ai:spring-ai-starter-model-openai')
+    implementation 'org.springframework:spring-webflux'
     implementation 'org.springframework.ai:spring-ai-starter-mcp-client'
+    implementation 'io.modelcontextprotocol.sdk:mcp-json-jackson2:2.0.0'
     implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
+
+    // Keep existing persistence/tool JSON on Jackson 2; Boot manages both Jackson generations.
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
 
     // Agent foundation
     implementation platform('com.agent.foundation:agent-foundation-bom:2.0.0-SNAPSHOT')
@@ -40,7 +45,7 @@ dependencies {
 
     // redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-    implementation 'org.redisson:redisson-spring-boot-starter:3.24.3'
+    implementation 'org.redisson:redisson-spring-boot-starter:4.7.0'
 
     // Minio
     implementation 'io.minio:minio:8.6.0'
@@ -57,11 +62,11 @@ dependencies {
     runtimeOnly 'com.mysql:mysql-connector-j'
 
     // Flyway
-    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
     implementation 'org.flywaydb:flyway-mysql'
 
     // MyBatis-Plus
-    implementation 'com.baomidou:mybatis-plus-spring-boot3-starter:3.5.9'
+    implementation 'com.baomidou:mybatis-plus-spring-boot4-starter:3.5.17'
 
     // Spring AI RAG (query expansion for EmbeddingService)
     implementation 'org.springframework.ai:spring-ai-rag'
@@ -79,6 +84,8 @@ dependencies {
 
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-http-codec'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {

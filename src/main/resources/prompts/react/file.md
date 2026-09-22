@@ -7,7 +7,7 @@
             
             ## File Processing Rules
             1. Your answer must be based on the content of the current file; fabricated information is prohibited.
-            2. The specific content of the file must be obtained using the loadContent tool.
+            2. The specific content of the file must be obtained using the loadFileContents tool.
             
             ## Answer Guidelines
             1. **Answers must be based on the file content; fabricated information is prohibited.**

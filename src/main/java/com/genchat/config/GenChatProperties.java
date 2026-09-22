@@ -33,7 +33,16 @@ public class GenChatProperties {
     @Setter
     public static class DeepResearch {
         private int maxRounds = 1;
+        /** Per-task model responses, including the final answer. */
+        private int taskMaxRounds = 15;
         private int toolSemaphorePermits = 1;
+
+        public void setTaskMaxRounds(int taskMaxRounds) {
+            if (taskMaxRounds < 2) {
+                throw new IllegalArgumentException("genchat.deep-research.task-max-rounds must be at least 2");
+            }
+            this.taskMaxRounds = taskMaxRounds;
+        }
     }
 
     @Getter

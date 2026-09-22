@@ -1,11 +1,11 @@
 package com.genchat.foundation;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeTypeUtils;
@@ -16,11 +16,14 @@ import java.util.List;
  * Foundation-side adapter for multimodal image-to-text extraction.
  */
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class FoundationMultimodalInterpreter {
 
     private final OpenAiChatModel multimodalChatModel;
+
+    public FoundationMultimodalInterpreter(@Qualifier("multimodalChatModel") OpenAiChatModel multimodalChatModel) {
+        this.multimodalChatModel = multimodalChatModel;
+    }
 
     public String describeImage(byte[] imageBytes) {
         if (imageBytes == null || imageBytes.length == 0) {

@@ -1,8 +1,10 @@
 package com.genchat.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
+import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -32,29 +34,35 @@ public class WebSearchToolInitConfig {
     @Value("${tavily.mcp-url}")
     private String tavilyMcpUrl;
 
-    private ToolCallback[] webSearchToolCallbacks;
+    private ToolCallback[] webSearchToolCallbacks = new ToolCallback[0];
 
     @PostConstruct
     public void init() {
         log.info("Initialize web search tool callback...");
+        try {
+            // tavily search engine
+            String authorizationHeader = "Bearer " + tavilyApiKey;
 
-        // tavily search engine
-        String authorizationHeader = "Bearer " + tavilyApiKey;
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+                    .header("Authorization", authorizationHeader);
 
-        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
-                .header("Authorization", authorizationHeader);
+            HttpClientStreamableHttpTransport tavilyTransport = HttpClientStreamableHttpTransport.builder(tavilyMcpUrl)
+                    .requestBuilder(requestBuilder)
+                    .jsonMapper(new JacksonMcpJsonMapper(new ObjectMapper()))
+                    .build();
+            McpSyncClient tavilyMcp = McpClient.sync(tavilyTransport)
+                    .requestTimeout(Duration.ofSeconds(300))
+                    .build();
+            tavilyMcp.initialize();
 
-        HttpClientStreamableHttpTransport tavTransport = HttpClientStreamableHttpTransport.builder(tavilyMcpUrl)
-                .requestBuilder(requestBuilder).build();
-        McpSyncClient tavilyMcp = McpClient.sync(tavTransport)
-                .requestTimeout(Duration.ofSeconds(300))
-                .build();
-        tavilyMcp.initialize();
+            List<McpSyncClient> mcpClients = List.of(tavilyMcp);
+            SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder().mcpClients(mcpClients).build();
 
-        List<McpSyncClient> mcpClients = List.of(tavilyMcp);
-        SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder().mcpClients(mcpClients).build();
-
-        webSearchToolCallbacks = provider.getToolCallbacks();
-        log.info("Web search tool callback initialization complete, number of tools: {}", webSearchToolCallbacks.length);
+            webSearchToolCallbacks = provider.getToolCallbacks();
+            log.info("Web search tool callback initialization complete, number of tools: {}", webSearchToolCallbacks.length);
+        } catch (Throwable e) {
+            webSearchToolCallbacks = new ToolCallback[0];
+            log.warn("Web search tool initialization failed; continuing without web search tools", e);
+        }
     }
 }

@@ -1,10 +1,11 @@
 package com.genchat.config;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
+import com.openai.client.OpenAIClientImpl;
+import com.openai.core.ClientOptions;
+import org.springframework.ai.openai.http.okhttp.SpringAiOpenAiHttpClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,18 +23,22 @@ public class MultimodalChatModelConfig {
     private Double temperature;
 
 
-    @Bean
+    // Keep the regular chat model auto-configuration active; this model is opt-in only.
+    @Bean(defaultCandidate = false)
     public OpenAiChatModel multimodalChatModel() {
         OpenAiChatOptions options = OpenAiChatOptions.builder()
                 .temperature(temperature)
                 .model(model)
                 .build();
+        OpenAIClientImpl openAiClient = new OpenAIClientImpl(ClientOptions.builder()
+                .baseUrl(baseUrl)
+                .apiKey(apiKey)
+                .httpClient(SpringAiOpenAiHttpClient.builder().build())
+                .build());
         OpenAiChatModel model = OpenAiChatModel.builder()
-                .openAiApi(OpenAiApi.builder()
-                        .baseUrl(baseUrl)
-                        .apiKey(new SimpleApiKey(apiKey))
-                        .build())
-                .defaultOptions(options)
+                .openAiClient(openAiClient)
+                .openAiClientAsync(openAiClient.async())
+                .options(options)
                 .build();
         log.info("Multimodal chat model initialized successfully.");
         return model;

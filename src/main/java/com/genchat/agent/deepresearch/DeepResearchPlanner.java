@@ -1,18 +1,16 @@
 package com.genchat.agent.deepresearch;
 
-import com.agent.foundation.model.RunnableParams;
+import com.agent.foundation.core.SpringAiChatModelAdapter;
+import com.agent.foundation.output.StructuredOutputSupport;
+import com.genchat.common.validation.StructuredResults;
 import com.genchat.common.prompts.PlanExecutePrompts;
-import com.genchat.common.utils.ThinkTagParser;
 import com.genchat.agent.deepresearch.model.OverAllState;
 import com.genchat.dto.PlanTask;
-import com.genchat.foundation.FoundationReactAgentFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.stereotype.Component;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.core.ParameterizedTypeReference;
 import reactor.core.publisher.Sinks;
 
 import java.util.List;
@@ -29,8 +27,7 @@ public class DeepResearchPlanner {
                                        Sinks.Many<String> sink,
                                        AtomicBoolean finished) {
         var toolDescriptions = DeepResearchStreams.renderToolDescriptions(deps.tools());
-        var converter = new BeanOutputConverter<List<PlanTask>>(new ParameterizedTypeReference<>() {
-        });
+        var outputSpec = StructuredResults.plan();
         Prompt prompt = new Prompt(List.of(
                 new SystemMessage(PlanExecutePrompts.getCurrentTime() + "\n\n" + PlanExecutePrompts.PLAN + """
                                                 ## Current context
@@ -41,7 +38,7 @@ public class DeepResearchPlanner {
                         
                                                 ## Output format
                                                 %s
-                        """.formatted(overAllState.getRound(), toolDescriptions, converter.getFormat())),
+                        """.formatted(overAllState.getRound(), toolDescriptions, outputSpec.format())),
                 new UserMessage("""
                         【Research Topic】
                         %s
@@ -63,17 +60,8 @@ public class DeepResearchPlanner {
         if (ctx.isStopped(finished)) {
             return List.of();
         }
-        var agent = FoundationReactAgentFactory.create(
-                deps.chatModel(),
-                deps.tools(),
-                deps.maxRounds(),
-                0,
-                true);
-        var content = agent.callForResult(
-                renderPrompt(prompt),
-                RunnableParams.builder().conversationId(overAllState.getConversationId()).build())
-                .content();
-        var planTasks = converter.convert(ThinkTagParser.stripThinkTags(content));
+        var planTasks = StructuredOutputSupport.generate(new SpringAiChatModelAdapter(deps.chatModel()),
+                prompt.getInstructions(), outputSpec).tasks();
         DeepResearchStreams.emitThinking(sink, finished,
                 "\n✅ Execution plan generated with " + planTasks.size() + " task(s)\n");
 
@@ -87,13 +75,4 @@ public class DeepResearchPlanner {
         return planTasks;
     }
 
-    private String renderPrompt(Prompt prompt) {
-        StringBuilder sb = new StringBuilder();
-        for (var message : prompt.getInstructions()) {
-            sb.append('[').append(message.getMessageType()).append("]\n")
-                    .append(message.getText() == null ? "" : message.getText())
-                    .append("\n\n");
-        }
-        return sb.toString();
-    }
 }

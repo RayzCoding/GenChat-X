@@ -1,7 +1,6 @@
 package com.genchat.agent.deepresearch;
 
 import com.genchat.application.agent.AgentFactory;
-import com.genchat.agent.SimpleReactAgent;
 import com.genchat.common.prompts.PlanExecutePrompts;
 import com.genchat.dto.PlanTask;
 import com.genchat.dto.TaskResult;
@@ -142,8 +141,15 @@ public class DeepResearchTaskExecutor {
                     """.formatted(dependencyContext, task.instruction());
 
             var simpleReactAgent = agentFactory.createSimpleReactAgent(deps.tools());
-            simpleReactAgent.setMaxRounds(5);
-            simpleReactAgent.setSystemPrompt(PlanExecutePrompts.EXECUTE);
+            simpleReactAgent.setMaxRounds(deps.taskMaxRounds());
+            simpleReactAgent.setSystemPrompt(PlanExecutePrompts.EXECUTE + """
+
+                    Execution budget: at most %d model responses, including the final answer.
+                    Make at most %d tool calls, one per response, and reserve the last response
+                    for a final curated answer without tools. Stop earlier when evidence is sufficient.
+                    If evidence is incomplete, return the verified findings with their source URLs
+                    and explicitly list missing or unverified items. Never invent data to fill gaps.
+                    """.formatted(deps.taskMaxRounds(), deps.taskMaxRounds() - 1));
             var result = simpleReactAgent.executeInternal(null, fullContext, true);
 
             if (ctx.getCompositeDisposable().isDisposed()) {

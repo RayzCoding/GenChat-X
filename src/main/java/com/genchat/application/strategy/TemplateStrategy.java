@@ -1,16 +1,15 @@
 package com.genchat.application.strategy;
 
-import com.agent.foundation.model.RunnableParams;
+import com.agent.foundation.core.SpringAiChatModelAdapter;
+import com.agent.foundation.output.StructuredOutputSupport;
 import com.genchat.common.AgentStreamEvent;
-import com.genchat.common.TemplateSelectionResult;
+import com.genchat.common.validation.StructuredResults;
 import com.genchat.common.prompts.PptBuilderPrompts;
 import com.genchat.dto.AiPptInst;
 import com.genchat.entity.PptInstStatus;
-import com.genchat.foundation.FoundationReactAgentFactory;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
+import org.springframework.ai.chat.messages.UserMessage;
 import reactor.core.publisher.Sinks;
 
 @Slf4j
@@ -46,21 +45,11 @@ public class TemplateStrategy implements PptStateStrategy {
             ));
         });
         var templateSelectionPrompt = PptBuilderPrompts.getTemplateSelectionPrompt(requirement, templatesInfo.toString());
-        var converter = new BeanOutputConverter<TemplateSelectionResult>(new ParameterizedTypeReference<>() {
-        });
-
         try {
-            var agent = FoundationReactAgentFactory.create(
-                    context.getDependencies().chatModel(),
-                    context.getTools(),
-                    5,
-                    0,
-                    true);
-            var resultText = agent.callForResult(
-                            templateSelectionPrompt + "\n\n" + converter.getFormat(),
-                            RunnableParams.builder().conversationId(inst.getConversationId()).build())
-                    .content();
-            var result = converter.convert(resultText);
+            var outputSpec = StructuredResults.template(pptTemplates.stream()
+                    .map(com.genchat.dto.AiPptTemplate::getTemplateCode).collect(java.util.stream.Collectors.toSet()));
+            var result = StructuredOutputSupport.generate(new SpringAiChatModelAdapter(context.getDependencies().chatModel()),
+                    java.util.List.of(new UserMessage(templateSelectionPrompt)), outputSpec);
             log.info("Template selection result: {}", result);
             inst.setTemplateCode(result.getTemplateCode());
             inst.setStatus(TARGET_STATUS.getCode());
@@ -73,7 +62,7 @@ public class TemplateStrategy implements PptStateStrategy {
             inst.setErrorMsg(e.getMessage());
             context.getDependencies().pptInstService().updateInst(inst);
 
-            context.getDependencies().strategyFactory().executeFailedStrategy(inst, sink, question, thinkingBuffer, context);
+            sink.tryEmitError(e);
         }
     }
 

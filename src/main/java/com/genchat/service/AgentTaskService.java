@@ -2,7 +2,6 @@ package com.genchat.service;
 
 import com.genchat.common.utils.JacksonJson;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBucket;
@@ -68,7 +67,7 @@ public class AgentTaskService implements InitializingBean, DisposableBean {
             return null;
         }
         var taskBucket = getTaskBucket(conversationId);
-        boolean acquired = taskBucket.trySet(instanceId, TASK_TTL_MINUTES, TimeUnit.MINUTES);
+        boolean acquired = taskBucket.setIfAbsent(instanceId, Duration.ofMinutes(TASK_TTL_MINUTES));
         if (!acquired) {
             var holder = taskBucket.get();
             log.info("Conversation [{}] has been acquired and holder{}, instance id{}.", conversationId, holder, instanceId);
@@ -158,11 +157,9 @@ public class AgentTaskService implements InitializingBean, DisposableBean {
     }
 
     @Override
-    public void afterPropertiesSet() throws Exception {
+    public void afterPropertiesSet() {
         // Subscription stop messages
-        listenerId = stopTopic.addListener(String.class, (channel, conversationId) -> {
-            handleRemoteStop(conversationId);
-        });
+        listenerId = stopTopic.addListener(String.class, (ignored, conversationId) -> handleRemoteStop(conversationId));
 
         // Start TTL refresh scheduled tasks
         ttlRefreshScheduler.scheduleAtFixedRate(

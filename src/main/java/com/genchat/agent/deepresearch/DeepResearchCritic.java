@@ -1,20 +1,18 @@
 package com.genchat.agent.deepresearch;
 
-import com.agent.foundation.model.RunnableParams;
+import com.agent.foundation.core.SpringAiChatModelAdapter;
+import com.agent.foundation.output.StructuredOutputSupport;
+import com.genchat.common.validation.StructuredResults;
 import com.genchat.common.prompts.PlanExecutePrompts;
-import com.genchat.common.utils.ThinkTagParser;
 import com.genchat.dto.CritiqueResult;
 import com.genchat.agent.deepresearch.model.OverAllState;
 import com.genchat.dto.PlanTask;
 import com.genchat.dto.TaskResult;
-import com.genchat.foundation.FoundationReactAgentFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.stereotype.Component;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.core.ParameterizedTypeReference;
 import reactor.core.publisher.Sinks;
 
 import java.util.List;
@@ -33,8 +31,7 @@ public class DeepResearchCritic {
                                    Map<String, TaskResult> currentResults,
                                    Sinks.Many<String> sink,
                                    AtomicBoolean hasSentFinal) {
-        BeanOutputConverter<CritiqueResult> converter = new BeanOutputConverter<>(new ParameterizedTypeReference<>() {
-        });
+        var outputSpec = StructuredResults.critique();
 
         DeepResearchStreams.emitThinking(sink, hasSentFinal, "\n🔍 Evaluating current research results...\n");
 
@@ -70,23 +67,15 @@ public class DeepResearchCritic {
             userMessage.append("None\n");
         }
 
-        String prom = PlanExecutePrompts.CRITIQUE + "\n" + converter.getFormat();
+        userMessage.append("\n\n【Accumulated Research Context】\n").append(state.renderFullContext());
+        String prom = PlanExecutePrompts.CRITIQUE;
         Prompt prompt = new Prompt(List.of(
                 new SystemMessage(PlanExecutePrompts.getCurrentTime() + "\n\n" + prom),
                 new UserMessage(userMessage.toString())
         ));
 
-        var agent = FoundationReactAgentFactory.create(
-                deps.chatModel(),
-                deps.tools(),
-                deps.maxRounds(),
-                0,
-                true);
-        String raw = agent.callForResult(
-                        renderPrompt(prompt),
-                        RunnableParams.builder().conversationId(state.getConversationId()).build())
-                .content();
-        var result = converter.convert(ThinkTagParser.stripThinkTags(raw));
+        var result = StructuredOutputSupport.generate(new SpringAiChatModelAdapter(deps.chatModel()),
+                prompt.getInstructions(), outputSpec);
 
         if (result.passed()) {
             DeepResearchStreams.emitThinking(sink, hasSentFinal,
@@ -98,13 +87,4 @@ public class DeepResearchCritic {
         return result;
     }
 
-    private String renderPrompt(Prompt prompt) {
-        StringBuilder sb = new StringBuilder();
-        for (var message : prompt.getInstructions()) {
-            sb.append('[').append(message.getMessageType()).append("]\n")
-                    .append(message.getText() == null ? "" : message.getText())
-                    .append("\n\n");
-        }
-        return sb.toString();
-    }
 }

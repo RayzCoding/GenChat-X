@@ -32,7 +32,12 @@ public class EmbeddingService {
 
     @PostConstruct
     public void init(){
-        vectorStore = pgVectorStoreFactory.createPgVectorStore("vector_file_info");
+        try {
+            vectorStore = pgVectorStoreFactory.createPgVectorStore("vector_file_info");
+        } catch (Throwable e) {
+            vectorStore = null;
+            log.warn("Embedding/vector store initialization failed; continuing without vector search", e);
+        }
     }
 
     /**
@@ -40,7 +45,7 @@ public class EmbeddingService {
      */
     public List<float[]> embed(List<Document> documents) {
         return documents.stream()
-                .map(document -> embeddingModel.embed(document.getText()))
+                .map(document -> embeddingModel.embed(StringUtils.defaultString(document.getText())))
                 .collect(Collectors.toList());
     }
 
@@ -48,6 +53,10 @@ public class EmbeddingService {
      * Embed and store documents in vector store
      */
     public void embedAndStore(List<Document> documents) {
+        if (vectorStore == null) {
+            log.warn("Vector store is unavailable; skipping embedAndStore");
+            return;
+        }
         for (int i = 0; i < documents.size(); i += EMBEDDING_BATCH_SIZE) {
             List<Document> batches = documents.subList(i, Math.min(i + EMBEDDING_BATCH_SIZE, documents.size()));
             vectorStore.doAdd(batches);
@@ -63,6 +72,11 @@ public class EmbeddingService {
      */
     public List<String> ragRetrieve(Long fileId, String question) {
         log.info("RAG retrieval started: fileId={}, question={}", fileId, question);
+
+        if (vectorStore == null) {
+            log.warn("Vector store is unavailable; returning fallback message for RAG retrieval");
+            return Collections.singletonList("RAG retrieval is temporarily unavailable");
+        }
 
         if (fileId == null || StringUtils.isBlank(question)) {
             log.warn("RAG retrieval parameters are empty: fileId={}, question={}", fileId, question);
@@ -110,6 +124,10 @@ public class EmbeddingService {
      */
     public void deleteByFileId(Long fileId) {
         if (fileId == null) {
+            return;
+        }
+        if (vectorStore == null) {
+            log.warn("Vector store is unavailable; skipping deleteByFileId for fileId={}", fileId);
             return;
         }
         try {

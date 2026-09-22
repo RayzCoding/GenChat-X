@@ -1,10 +1,5 @@
 server:
   port: 8080
-  servlet:
-    encoding:
-      charset: UTF-8
-      force: true
-      enabled: true
 
 spring:
   profiles:
@@ -24,7 +19,8 @@ spring:
   ai:
     openai:
       api-key: ${OPENAI_API_KEY:your-api-key}
-      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      # Spring AI 2.0 uses the SDK base URL; include /v1, not /chat/completions.
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
       chat:
         options:
           model: gpt-4o
@@ -32,7 +28,7 @@ spring:
           maxTokens: 5000
       embedding:
         api-key: ${OPENAI_API_KEY:your-api-key}
-        base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+        base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
         options:
           model: text-embedding-v4
           dimmension: 1024
@@ -46,6 +42,11 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
   servlet:
+    # Spring Boot 4 moved HTTP encoding from server.servlet to spring.servlet.
+    encoding:
+      charset: UTF-8
+      force: true
+      enabled: true
     multipart:
       max-file-size: 10MB
 
@@ -91,6 +92,8 @@ genchat:
     chunk-overlap: 50
   deep-research:
     max-rounds: 1
+    # Per-task model responses, including one response for the final answer.
+    task-max-rounds: ${GENCHAT_DEEP_RESEARCH_TASK_MAX_ROUNDS:15}
     tool-semaphore-permits: 1
   context:
     token-threshold: 60000

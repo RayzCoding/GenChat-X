@@ -33,21 +33,24 @@ Highest priority:
    - Return one task with `"id": null`
    - This means no further tool retrieval is needed and summarization can begin
 
-5. Output must be a **strict JSON array**
+5. Output must be a **strict JSON object with a tasks array**
    - No extra explanatory text
+   - Execution task IDs must be nonblank and unique; instructions must be nonblank.
+   - Order groups start at 1 and are contiguous. Tasks in the same group may execute in parallel.
+   - A stop task must be the only task, with id=null and order=0. An empty tasks array also means stop.
 
 ## Output format (strict JSON)
 Example 1: no tool execution needed
-[
+{"tasks":[
   {
     "id": null,
     "instruction": "No tools need to be called",
     "order": 0
   }
-]
+]}
 
 Example 2: parallel tool execution plan
-[
+{"tasks":[
   {
     "id": "task-1",
     "instruction": "Call <tool_name> to perform <specific query or action>",
@@ -58,10 +61,10 @@ Example 2: parallel tool execution plan
     "instruction": "Call <tool_name> to perform <specific query or action>",
     "order": 1
   }
-]
+]}
 
 Example 3: sequential execution plan
-[
+{"tasks":[
   {
     "id": "task-1",
     "instruction": "Call <tool_name> to perform <specific query or action> and obtain XX result",
@@ -72,11 +75,11 @@ Example 3: sequential execution plan
     "instruction": "Based on task-1 results, call <tool_name> to perform <specific query or action>",
     "order": 2
   }
-]
+]}
 
 Example 4: mixed parallel + sequential plan
-[
+{"tasks":[
   {"id":"task-1","instruction":"Call XXX tool to perform <specific query or action>","order":1},
   {"id":"task-2","instruction":"Call XXX tool to perform <specific query or action>","order":1},
   {"id":"task-3","instruction":"Based on task-1 and task-2 results, call XXX tool to perform <specific query or action>","order":2}
-]
+]}

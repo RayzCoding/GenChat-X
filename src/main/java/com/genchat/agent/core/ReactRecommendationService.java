@@ -1,10 +1,10 @@
 package com.genchat.agent.core;
 
-import com.agent.foundation.model.RunnableParams;
+import com.agent.foundation.core.SpringAiChatModelAdapter;
+import com.agent.foundation.output.StructuredOutputSupport;
 import com.genchat.common.prompts.ReactAgentPrompts;
 import com.genchat.common.utils.JacksonJson;
-import com.genchat.foundation.FoundationReactAgentFactory;
-import com.genchat.service.session.SessionPayloadParser;
+import com.genchat.common.validation.StructuredResults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -40,19 +40,10 @@ public final class ReactRecommendationService {
             }
 
             messages.add(new UserMessage("Please generate exactly 3 recommended questions based on the above dialogue. "
-                    + "Return only a valid JSON array of 3 strings. No markdown fences, no schema, no extra explanation."));
-            var agent = FoundationReactAgentFactory.create(chatModel, List.of(), 3, 0, false);
-            var response = agent.callForResult(messages, RunnableParams.builder().build()).content();
-            if (response != null && !response.isEmpty()) {
-                List<String> recommendations = SessionPayloadParser.parseRecommend(response);
-                if (!CollectionUtils.isEmpty(recommendations)) {
-                    var jsonStr = JacksonJson.toJson(recommendations);
-                    log.info("The recommendation question has been successfully generated: {}", jsonStr);
-                    return jsonStr;
-                }
-            }
-            log.warn("Failed to generate recommendation questions, response format is invalid: {}", response);
-            return null;
+                    + "Return only a JSON object with a questions array of exactly 3 strings. No extra explanation."));
+            var result = StructuredOutputSupport.generate(new SpringAiChatModelAdapter(chatModel), messages,
+                    StructuredResults.recommendations());
+            return JacksonJson.toJson(result.questions().stream().map(String::strip).toList());
         } catch (Exception e) {
             log.error("Anomaly in generating recommendation questions", e);
             return null;

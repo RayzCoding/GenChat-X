@@ -1,5 +1,6 @@
 package com.genchat.common.utils;
 
+import com.agent.foundation.core.AssistantTextParser;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,7 +21,7 @@ public final class ThinkTagParser {
     }
 
     /**
-     * Strip think tags and their content from text.
+     * Strip leading reasoning blocks only; preserve literal tags in the answer.
      *
      * @param input text that may contain think tags
      * @return text with think tags removed
@@ -29,9 +30,7 @@ public final class ThinkTagParser {
         if (input == null || input.isEmpty()) {
             return input;
         }
-        // Generic regex: match <think...>...</think...> (spaces, attributes, self-closing variants)
-        String result = input.replaceAll("(?s)<think[^>]*>.*?</think[^>]*>", "").trim();
-        return result;
+        return AssistantTextParser.parse(input).content().trim();
     }
 
     /**
@@ -53,6 +52,7 @@ public final class ThinkTagParser {
      * @param inThink whether the previous chunk ended inside a think tag
      * @return parse result with split segments and updated inThink state
      */
+    @Deprecated
     public static ParseResult parse(String chunk, boolean inThink) {
         if (chunk == null || chunk.isEmpty()) {
             return new ParseResult(List.of(), inThink);

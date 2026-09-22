@@ -30,6 +30,7 @@ public class DeepResearchConfiguration {
                 List.of(webSearchToolInitConfig.getWebSearchToolCallbacks()),
                 agentTaskService,
                 deepResearch.getMaxRounds(),
+                deepResearch.getTaskMaxRounds(),
                 deepResearch.getToolSemaphorePermits());
     }
 

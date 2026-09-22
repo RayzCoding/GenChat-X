@@ -1,7 +1,7 @@
 package com.genchat.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.genchat.converter.AiPptTemplateConverter;
 import com.genchat.dto.AiPptTemplate;
 import com.genchat.entity.AiPptTemplateEntity;

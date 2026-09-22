@@ -14,17 +14,15 @@ import org.redisson.client.codec.StringCodec;
 import reactor.core.Disposable;
 import reactor.core.publisher.Sinks;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -39,8 +37,7 @@ class AgentTaskServiceTest {
     @Mock
     private RedissonClient redissonClient;
     @Mock
-    @SuppressWarnings("rawtypes")
-    private RBucket taskBucket;
+    private RBucket<String> taskBucket;
     @Mock
     private RTopic stopTopic;
 
@@ -51,12 +48,12 @@ class AgentTaskServiceTest {
     void setUp() {
         bucketHolder.set(null);
         when(redissonClient.getTopic(eq("agent:stop"), eq(StringCodec.INSTANCE))).thenReturn(stopTopic);
-        when(redissonClient.getBucket(anyString(), eq(StringCodec.INSTANCE))).thenReturn(taskBucket);
-        when(taskBucket.trySet(anyString(), anyLong(), eq(TimeUnit.MINUTES))).thenAnswer(invocation -> {
+        when(redissonClient.<String>getBucket(anyString(), eq(StringCodec.INSTANCE))).thenReturn(taskBucket);
+        when(taskBucket.setIfAbsent(anyString(), eq(Duration.ofMinutes(30)))).thenAnswer(invocation -> {
             bucketHolder.set(invocation.getArgument(0));
             return true;
         });
-        when(taskBucket.get()).thenAnswer(invocation -> bucketHolder.get());
+        when(taskBucket.get()).thenAnswer(ignored -> bucketHolder.get());
         agentTaskService = new AgentTaskService(redissonClient);
     }
 
@@ -66,12 +63,12 @@ class AgentTaskServiceTest {
     }
 
     private static Sinks.Many<String> newSink() {
-        return Sinks.many().unicast().<String>onBackpressureBuffer();
+        return Sinks.many().unicast().onBackpressureBuffer();
     }
 
     @Test
     void registerTaskReturnsNullWhenBucketLockNotAcquired() {
-        when(taskBucket.trySet(anyString(), anyLong(), eq(TimeUnit.MINUTES))).thenReturn(false);
+        when(taskBucket.setIfAbsent(anyString(), eq(Duration.ofMinutes(30)))).thenReturn(false);
 
         var sink = newSink();
         var result = agentTaskService.registerTask("conv-1", sink, "webSearchReactAgent");
@@ -103,12 +100,12 @@ class AgentTaskServiceTest {
     }
 
     @Test
-    void stopLocalTaskEmitsStopMessageRemovesTaskAndReturnsFalse() {
+    void stopLocalTaskEmitsStopMessageRemovesTaskAndReturnsTrue() {
         var sink = newSink();
         var messages = collectSinkMessages(sink);
         agentTaskService.registerTask("conv-stop", sink, "webSearchReactAgent");
 
-        assertFalse(agentTaskService.stopTask("conv-stop"));
+        assertTrue(agentTaskService.stopTask("conv-stop"));
         assertFalse(agentTaskService.hasRunningTask("conv-stop"));
         assertTrue(messages.stream().anyMatch(line -> line.contains("stopped generating")));
         verify(taskBucket).delete();

@@ -14,6 +14,7 @@ public record DeepResearchDependencies(
         List<ToolCallback> tools,
         AgentTaskService agentTaskService,
         int maxRounds,
+        int taskMaxRounds,
         Semaphore toolSemaphore,
         String agentType
 ) {
@@ -22,6 +23,7 @@ public record DeepResearchDependencies(
                                     List<ToolCallback> tools,
                                     AgentTaskService agentTaskService,
                                     int maxRounds,
+                                    int taskMaxRounds,
                                     int toolSemaphorePermits) {
         this(
                 sessionService,
@@ -29,6 +31,7 @@ public record DeepResearchDependencies(
                 tools,
                 agentTaskService,
                 maxRounds,
+                taskMaxRounds,
                 new Semaphore(toolSemaphorePermits),
                 "DeepResearchAgent"
         );
