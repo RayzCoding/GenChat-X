@@ -1,4 +1,6 @@
 ---
+
+> **Status:** Target design specification. The source components and Tailwind/CSS tokens are the implementation authority; verify visual changes on desktop and mobile before treating a rule below as shipped behavior.
 name: Synthetic Intelligence System
 colors:
   surface: '#12131b'
@@ -110,7 +112,7 @@ The aesthetic follows a **Cyber-Glassmorphism** style. It utilizes deep, dark ba
 ## Colors
 
 The palette is optimized for OLED displays and low-light environments. 
-- **Surface Foundations:** The base layer is a deep `#0B0C14`. Secondary surfaces use subtle shifts in luminosity to define hierarchy without losing the "infinite dark" feel.
+- **Surface Foundations:** The base layer uses the `surface` / `background` token `#12131b`. Secondary surfaces use subtle shifts in luminosity to define hierarchy without losing the "infinite dark" feel.
 - **Accents:** Electric Blue and Cyber Purple are reserved for primary actions and active states. Mint Green is used strictly for success states and generative completion indicators.
 - **Translucency:** Backgrounds for modals and sidebars should use 60-80% opacity with a 20px-40px backdrop blur to maintain the glass effect.
 
@@ -132,7 +134,7 @@ The layout follows a **Fixed-Fluid Hybrid** model.
 ## Elevation & Depth
 
 Hierarchy is established through **Backdrop Blur** and **Inner Glows** rather than traditional drop shadows.
-- **Level 1 (Base):** Deep `#0B0C14`.
+- **Level 1 (Base):** `#12131b` (`surface` / `background`).
 - **Level 2 (Panels):** Surface at 70% opacity with a 1px solid border at 10% white opacity.
 - **Level 3 (Active/Popups):** Surface with a 2px "Electric Blue" to "Cyber Purple" gradient border (low opacity) and a 30px backdrop blur.
 - **Glows:** Primary buttons and active indicators feature a soft outer glow (`box-shadow: 0 0 15px rgba(62, 123, 255, 0.3)`) to simulate light emission from the UI.

@@ -1,4 +1,6 @@
-# GenChat 最终架构设计方案 v2.0
+# GenChat-X 最终架构设计方案 v2.0
+
+> 项目已从 GenChat 的 `refactor/agent-foundation` 分支独立为 GenChat-X。本文保留历史规划背景，版本号、工作量及收益为当时的方案描述，不代表当前发布状态；实际构建与拆分边界见 [README](../README.md) 和 [项目独立说明](../docs/project-independence.md)。当前应用通过同级 composite build 使用 agent-foundation BOM + core，Starter 为可选集成方式。
 
 **最终版本** | **生成日期**: 2024年8月11日 | **状态**: 就绪可执行
 
@@ -10,19 +12,19 @@
 
 | 方案 | 形式 | 交期 | 风险 | 资源 | 推荐 |
 |------|------|------|------|------|------|
-| 从零设计 | GenChat 内置 | 30周 | 高 | 10+人 | ❌ |
+| 从零设计 | GenChat-X 内置 | 30周 | 高 | 10+人 | ❌ |
 | **融合AgentX** | **独立包** | **12周** | **低** | **5人** | ✅ |
 
 **架构设计**：
 ```
-GenChat v2.0 = GenChat 业务代码 + agent-foundation 框架包
+GenChat-X = 业务代码 + agent-foundation 框架包
                (纯业务)              (1330行纯框架)
 ```
 
 **理由**：
 - ✅ Foundation 框架完全剥离业务，可独立复用
 - ✅ AgentX 设计验证可行（三态、6层压缩、Hook等）
-- ✅ GenChat 只保留业务逻辑（Agent/Tool实现/Controller）
+- ✅ GenChat-X 只保留业务逻辑（Agent/Tool实现/Controller）
 - ✅ 缩短交期60%，可复用性100%
 - ✅ 支持将框架开源发布（如 LangGraph）
 
@@ -31,7 +33,7 @@ GenChat v2.0 = GenChat 业务代码 + agent-foundation 框架包
 ## 二、当前问题诊断
 
 ```
-GenChat v1.0 的症状：
+原 GenChat v1.0 的症状（历史基线）：
 ❌ 代码混乱      - Agent中混合了框架+业务（500-700行/个）
 ❌ 功能冗余      - 35%代码重复率
 ❌ 架构简陋      - 会话存储、工具管理、工具调用权责不清
@@ -50,7 +52,7 @@ GenChat v1.0 的症状：
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  业务层（GenChat 应用代码）                                      │
+│  业务层（GenChat-X 应用代码）                                    │
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │  ChatController / FileController / ...                   │  │
 │  │  ChatAgent / FileAgent / DeepResearchAgent / ...         │  │
@@ -102,7 +104,7 @@ MySQL        PgVector        Redis           MinIO
 
 ### 3.2 核心改造对照表
 
-| 组件 | GenChat现状 | AgentX方案 | 融合方案 | 代码量 |
+| 组件 | 原 GenChat 历史基线 | AgentX方案 | 融合方案 | 代码量 |
 |------|-----------|----------|--------|--------|
 | **Agent执行** | AbstractReactAgent混乱 | ReactAgent清晰 | ✅新框架 | 30行 |
 | **循环驱动** | 混在Agent中 | AgentLoopExecutor | ✅提取 | 200行 |
@@ -171,7 +173,7 @@ MySQL        PgVector        Redis           MinIO
    └─ v2.0 正式发布
 ```
 
-**交付**：GenChat v2.0（全量升级）
+**交付**：GenChat-X（全量升级方案）
 
 ---
 
@@ -187,7 +189,7 @@ MySQL        PgVector        Redis           MinIO
 ├─ 支持 Maven 独立发布
 └─ 可被其他项目依赖使用
 
-📱 genchat-app （业务应用）
+📱 genchat-x-app （业务应用，文档代称）
 ├─ ChatAgent / FileAgent / ... （业务 Agent）
 ├─ WebSearchTool / FileSearchTool / ... （业务工具）
 ├─ ChatController / FileController / ... （业务 API）
@@ -438,7 +440,7 @@ PauseAdvisor.pause(PauseReason.WAITING_FOR_INPUT);
 ### 代码指标
 
 ```
-当前GenChat                 融合方案后            提升
+原 GenChat 历史基线         融合方案后            提升
 ────────────────────────────────────────────────────────
 代码重复率：35%      →      8%              ↓ 77%
 单Agent行数：500avg  →      180avg          ↓ 64%
@@ -548,18 +550,20 @@ Sub-Agent：无          →      有（隔离清晰）
 
 ## 十、核心参考
 
-**必读文档**：
-- `FINAL_DECISION_SUMMARY.md` — 最终决策依据
-- `GENCHAT_AGENTX_FUSION_PLAN.md` — 完整融合设计
-- `EXECUTION_CHECKLIST_AGENTX_FUSION.md` — 执行清单
-- `ARCHITECTURE_DETAILS.md` — AgentX架构参考
-- `CAPABILITY_ANALYSIS.md` — AgentX能力参考
+**历史参考文档（本仓库未包含）**：
+- `FINAL_DECISION_SUMMARY.md` — 原最终决策依据
+- `GENCHAT_AGENTX_FUSION_PLAN.md` — 原完整融合设计
+- `EXECUTION_CHECKLIST_AGENTX_FUSION.md` — 原执行清单
+- `ARCHITECTURE_DETAILS.md` — 原 AgentX 架构参考
+- `CAPABILITY_ANALYSIS.md` — 原 AgentX 能力分析
+
+当前实现请改读根 [`README.md`](../README.md)、[`steering/structure.md`](../steering/structure.md) 与 agent-foundation 正式文档。
 
 ---
 
 ## 最后一句话
 
-> **GenChat v2.0 = GenChat现有功能 + AgentX成熟架构**
+> **GenChat-X = 原 GenChat 功能 + AgentX 架构设计参考**
 >
 > **12周内，从混乱单体升级为清晰模块化，代码精简59%，成本节省60%。**
 >
@@ -572,9 +576,9 @@ Sub-Agent：无          →      有（隔离清晰）
 ```xml
 <!-- 任何项目都可以这样依赖 -->
 <dependency>
-    <groupId>com.genchat</groupId>
+    <groupId>com.agent.foundation</groupId>
     <artifactId>agent-foundation-spring-boot-starter</artifactId>
-    <version>2.0.0</version>
+    <version>2.0.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -620,7 +624,7 @@ Flux<AgentStreamEvent> stream = agent.streamForEvents(question, params);
 
 > **agent-foundation 是一个企业级、生产就绪的 Agent 框架。**
 >
-> **它可以在 GenChat v2.0 中使用，也可以在任何其他 AI 应用中独立复用。**
+> **它可以在 GenChat-X 中使用，也可以在任何其他 AI 应用中独立复用。**
 >
 > **12 周打造，5 年价值。**
 

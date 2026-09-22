@@ -1,4 +1,6 @@
-# GenChat 结构化输出校验与迁移
+# GenChat-X 结构化输出校验与迁移
+
+> **状态：已实现的迁移验证记录。** Foundation API、schema/repair 规则和 provider 限制以 [`agent-foundation/docs/structured-output-reliability.md`](../../agent-foundation/docs/structured-output-reliability.md) 为准；本文只记录 GenChat-X 业务接入和数据契约。
 
 ## 已接入的业务
 
@@ -49,7 +51,7 @@ PPT 意图、模板选择、PPT Schema 生成/修改、DeepResearch 规划/评�
 ## 验证
 
 - Foundation 测试覆盖混合 reasoning/text chunk、跨 chunk 标签、字面标签保真、订阅隔离、工具 schema、参数片段、严格 schema 校验、有界修复、不重复工具、轮次耗尽和流式输出后禁止重播。
-- GenChat 测试覆盖模板候选、PPT 字段/页码/长度/可选 URL、意图失败、修改状态保护、任务/评审契约、推荐元素类型及数量、通过后停止研究。
+- GenChat-X 测试覆盖模板候选、PPT 字段/页码/长度/可选 URL、意图失败、修改状态保护、任务/评审契约、推荐元素类型及数量、通过后停止研究。
 - 本地 HTTP 假服务使用真实 Spring AI OpenAI 模型适配器，检查原始工具 schema、默认工具隔离、provider options 保留及原生 response_format。
 - 测试不访问外部模型，也不代表实际模型支持所有原生 JSON Schema 特性。
 

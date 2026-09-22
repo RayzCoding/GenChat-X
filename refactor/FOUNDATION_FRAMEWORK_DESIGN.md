@@ -1,4 +1,6 @@
-# GenChat Foundation - 独立 Agent 框架包设计
+# agent-foundation - 独立 Agent 框架包设计（GenChat-X 集成）
+
+> 本文保留框架提取的历史设计方案，示例 API、里程碑和能力描述不等同于当前实现。业务应用现已独立为 GenChat-X，框架仍是独立的 agent-foundation 项目。当前应用使用 `../agent-foundation` composite build 的 BOM + core，Starter 是可选集成方式；以构建文件及框架实际文档为准。详见 [项目独立说明](../docs/project-independence.md)。
 
 **版本**: 2.0  
 **定位**: 企业级、可复用的 AI Agent 执行框架  
@@ -33,7 +35,7 @@
 └─────────────────┬───────────────────────────────────────┘
                   │
 ┌─────────────────▼───────────────────────────────────────┐
-│        GenChat Foundation - Agent 框架包                 │
+│        agent-foundation - Agent 框架包                   │
 ├─────────────────────────────────────────────────────────┤
 │  核心模块（高内聚）                                       │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
@@ -87,7 +89,7 @@
 agent-foundation/
 ├─ agent-foundation-core/            # 核心框架包
 │  ├─ pom.xml
-│  └─ src/main/java/com/genchat/foundation/
+│  └─ src/main/java/com/agent/foundation/
 │     ├─ core/                       # 核心引擎
 │     │  ├─ ReactAgent.java          # 主控编排
 │     │  ├─ AgentLoopExecutor.java   # ReAct循环驱动
@@ -604,7 +606,7 @@ public class CustomBusinessAgent {
 - ❌ 任何特定领域的工具（只提供框架）
 - ❌ 任何 Controller（只提供 API）
 
-**业务包 (genchat-app) 中包含**：
+**业务包（GenChat-X，文档代称 genchat-x-app）中包含**：
 - ✅ 具体的 Agent 实现
 - ✅ 业务工具集
 - ✅ 业务表设计
@@ -621,16 +623,16 @@ public class CustomBusinessAgent {
 ```xml
 <!-- 业务项目依赖框架 -->
 <dependency>
-    <groupId>com.genchat</groupId>
+    <groupId>com.agent.foundation</groupId>
     <artifactId>agent-foundation-spring-boot-starter</artifactId>
-    <version>2.0.0</version>
+    <version>2.0.0-SNAPSHOT</version>
 </dependency>
 
 <!-- 或直接依赖核心包 -->
 <dependency>
-    <groupId>com.genchat</groupId>
+    <groupId>com.agent.foundation</groupId>
     <artifactId>agent-foundation-core</artifactId>
-    <version>2.0.0</version>
+    <version>2.0.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -689,12 +691,12 @@ foundation:
 
 ---
 
-## 八、与 GenChat 的集成
+## 八、与 GenChat-X 的集成
 
-### 8.1 GenChat v2.0 依赖关系
+### 8.1 GenChat-X 依赖关系（Starter 集成方案）
 
 ```
-genchat-app (业务应用)
+genchat-x-app (业务应用，文档代称)
 ├─ ChatAgent / FileAgent / ...
 ├─ ChatController / FileController / ...
 ├─ 业务表设计 / 业务 Hook / ...
@@ -707,13 +709,13 @@ genchat-app (业务应用)
 
 ```
 Phase 1-2: 框架重构
-  GenChat 内部代码 → agent-foundation 包
+  原 GenChat 内部代码 → agent-foundation 包（历史提取过程）
   
 Phase 3: 抽离发布
   agent-foundation 作为独立 Maven 包
   
 Phase 4: 使用外部包
-  genchat-app 依赖 agent-foundation (Maven)
+  genchat-x-app 依赖 agent-foundation (Maven)
   
 Phase 5: 开源发布
   agent-foundation 独立开源（GitHub）
@@ -723,7 +725,7 @@ Phase 5: 开源发布
 
 ## 九、与 LangGraph 的对比
 
-| 维度 | LangGraph | GenChat Foundation |
+| 维度 | LangGraph | agent-foundation |
 |------|-----------|-------------------|
 | **抽象** | Graph（有向图）| Stream（反应式流） |
 | **学习曲线** | 陡（需理解图论） | 平缓（Reactor即可） |
@@ -753,7 +755,7 @@ Phase 5: 开源发布
 ## 立即行动
 
 ### Week 1-2: 代码提取
-将 GenChat 中的框架代码提取到 `agent-foundation` Maven 包
+将原 GenChat 中的框架代码提取到 `agent-foundation` Maven 包（历史计划）
 
 ### Week 3-4: 测试与完善
 单元测试、集成测试、性能基准
@@ -762,11 +764,12 @@ Phase 5: 开源发布
 发布到 Maven Central 或内部 Nexus
 
 ### 后续: 在其他项目中复用
-```java
-// 任何其他 AI 应用都可以直接依赖使用
+```xml
+<!-- 任何其他 AI 应用都可以直接依赖使用 -->
 <dependency>
-    <groupId>com.genchat</groupId>
+    <groupId>com.agent.foundation</groupId>
     <artifactId>agent-foundation-spring-boot-starter</artifactId>
+    <version>2.0.0-SNAPSHOT</version>
 </dependency>
 ```
 

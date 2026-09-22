@@ -1,4 +1,4 @@
-# GenChat - Intelligent Conversation Application Platform
+# GenChat-X - Intelligent Conversation Platform powered by agent-foundation
 
 <p align="center">
   <a href="README.md">中文</a> | <a href="README_EN.md">English</a>
@@ -6,16 +6,15 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Version-1.0.0-blue" alt="Version">
-  <img src="https://img.shields.io/badge/Spring%20Boot-3.5.6-green" alt="Spring Boot">
-  <img src="https://img.shields.io/badge/Spring%20AI-1.1.0-orange" alt="Spring AI">
-  <img src="https://img.shields.io/github/stars/RayzCoding/GenChat" alt="Stars">
-  <img src="https://img.shields.io/github/forks/RayzCoding/GenChat" alt="Forks">
-  <img src="https://img.shields.io/github/issues/RayzCoding/GenChat" alt="Issues">
+  <img src="https://img.shields.io/badge/Spring%20Boot-4.1.0-green" alt="Spring Boot">
+  <img src="https://img.shields.io/badge/Spring%20AI-2.0.0-orange" alt="Spring AI">
 </p>
 
 ## 🎯 Project Introduction
 
-GenChat is an intelligent conversation application platform built on Spring AI. It offers multiple agent modes—web search, file Q&A, PPT generation, deep research, and a Skills assistant—along with a React frontend. The platform aims to provide enterprise users and individual developers with an out-of-the-box, highly scalable AI agent solution.
+GenChat-X is an independent project extracted from the `refactor/agent-foundation` branch of [GenChat](https://github.com/RayzCoding/GenChat). Built on Spring AI and the independent `agent-foundation` framework, it offers web search, file Q&A, PPT generation, deep research, and a Skills assistant, along with a React frontend.
+
+It has its own Git repository with `main` as its main branch and does not depend on the original GenChat working directory. The separate `agent-foundation` project is included through a sibling-directory Gradle composite build. See [Project Independence](docs/project-independence.md) for extraction and migration details (Chinese).
 
 **Project Vision**: To build a comprehensive, easy-to-integrate, production-ready intelligent conversation platform that helps enterprises create smarter business applications in the AI era.
 
@@ -25,6 +24,7 @@ GenChat is an intelligent conversation application platform built on Spring AI. 
 - 🔌 **Composable Capabilities**: Web search, RAG file Q&A, PPT state machine, Plan-Execute deep research, and more—usable standalone or combined
 - 🔧 **Developer Friendly**: Built on the Spring Boot ecosystem with clear REST / SSE APIs and externalized configuration
 - 📦 **Out-of-the-Box**: Session management, streaming stop, Flyway migrations, and a Vite + React frontend included
+- ✅ **Reliable Structured Output**: PPT, deep-research, and recommendation flows use Foundation JSON Schema, business validation, and bounded repair instead of fabricated fallback DTOs
 
 ## 🔥 Core Features
 
@@ -105,27 +105,77 @@ GenChat is an intelligent conversation application platform built on Spring AI. 
 
 ## 🚀 Quick Start
 
+Requires **JDK 25** and **Node.js 20+**. Place `GenChat-X/` and `agent-foundation/` (version `2.0.0-SNAPSHOT`) in the same parent directory. Open `GenChat-X` in IntelliJ IDEA as a Gradle project and select JDK 25 as the Gradle JVM.
+
 ```bash
-# Backend (default port 8080, requires Java 21)
+# From the GenChat-X root, prepare local configuration and fill in your credentials
+cp src/main/resources/application-local.yml.example src/main/resources/application-local.yml
+
+# Start MySQL, Redis, MinIO, and PgVector
+cp .env.example .env
+docker compose up -d
+
+# Backend (default port 8080, requires Java 25)
 ./gradlew bootRun
 
-# Frontend (dev server at http://localhost:5173)
-cd frontend && npm install && npm run dev
+# Frontend (separate terminal, dev server at http://localhost:5173)
+cd frontend && npm ci && npm run dev
 ```
 
-Configure MySQL, Redis, OpenAI-compatible API, Tavily, MinIO, PgVector, and other connections in `application.yml` (overridable via environment variables). Agent behavior can be tuned via `genchat.*` settings (e.g. ReAct max rounds, chat memory window, file chunk size).
+Configure MySQL, Redis, the OpenAI-compatible API, Tavily, MinIO, PgVector, and other connections through environment variables or the untracked `application-local.yml`; do not commit secrets to the base `application.yml`. Agent behavior can be tuned via `genchat.*` settings (for example ReAct max rounds, chat memory window, and file chunk size). Compose's `.env` is not automatically loaded by a host-side `bootRun`.
+
+See [Docker setup](docker/README.md) for local infrastructure. The original project's `.env`, local configuration, databases, and generated files are not migrated automatically. Use separate ports and data services when running both projects. `./gradlew bootJar` produces `build/libs/GenChat-X-1.0.0.jar`. The Java package `com.genchat`, entry point `GenChatApplication`, and `genchat.*` configuration keys are retained for compatibility.
+
+### Unified Streaming Endpoint (optional)
+
+The backend exposes `POST /agent/stream` as a unified SSE endpoint while retaining the mode-specific compatibility endpoints.
+
+```json
+{
+  "mode": "file",
+  "question": "Summarize this document",
+  "conversationId": "conv-123",
+  "fileId": "file-abc"
+}
+```
+
+Supported modes are `chat` (default), `simple`, `file`, `deep`, `ppt`, and `skills`.
+
+| Mode | Required | Optional | Notes |
+|------|----------|----------|-------|
+| `chat` | `question`, `conversationId` | `conversationsId` | Web-connected/general chat |
+| `simple` | `question` | `conversationId` | Single-turn response; conversation ID is not used for memory |
+| `file` | `question`, `conversationId`, `fileId` | `conversationsId` | File Q&A |
+| `deep` | `question`, `conversationId` | `conversationsId` | Deep-research executor |
+| `ppt` | `question` | `conversationId`, `conversationsId` | PPT workflow |
+| `skills` | `question` | `conversationId`, `conversationsId`, `fileId` | Skills/tool collaboration |
+
+`query` is accepted as a compatibility alias for `question`; `conversationsId` is accepted as an alias for `conversationId`. The singular names take precedence.
+
+Validation error codes: `40001` null request, `40002` missing question, `40003` missing required conversation ID, `40004` missing file ID, and `40005` unsupported mode.
 
 See [`frontend/README.md`](frontend/README.md) for more frontend details.
+
+### Build Verification
+
+```bash
+./gradlew test bootJar
+cd frontend
+npm ci
+npm run lint
+npm run build
+```
 
 ## 🛠️ Technology Stack
 
 ### Base Frameworks
 | Component | Version | Core Functions |
 |-----------|---------|----------------|
-| Java | 21 | Runtime |
-| Spring Boot | 3.5.6 | Application base framework providing auto-configuration, dependency injection, Web container, etc. |
-| Spring AI | 1.1.0 | AI application development framework encapsulating LLM calls, tool integration, prompt management, etc. |
-| MyBatis-Plus | 3.5.9 | Simplifies MySQL operations, provides CRUD encapsulation, pagination, conditional queries, etc. |
+| Java | 25 | Runtime |
+| Spring Boot | 4.1.0 | Application base framework providing auto-configuration, dependency injection, Web container, etc. |
+| Spring AI | 2.0.0 | AI application development framework encapsulating LLM calls, tool integration, prompt management, etc. |
+| agent-foundation | 2.0.0-SNAPSHOT | Independent Agent framework; BOM and core included via composite build |
+| MyBatis-Plus | 3.5.17 | Simplifies MySQL operations, provides CRUD encapsulation, pagination, conditional queries, etc. |
 | Flyway | - | Database schema migrations (`db/migration`) |
 
 ### Large Model Services
@@ -140,7 +190,7 @@ See [`frontend/README.md`](frontend/README.md) for more frontend details.
 ### Data Storage Components
 | Component | Version | Purpose |
 |-----------|---------|---------|
-| MySQL | 8.0.33 | Stores structured data: session records, file metadata, PPT instance status, template configurations, etc. |
+| MySQL | 8.0 (floating Compose tag) | Stores structured data: session records, file metadata, PPT instance status, template configurations, etc. |
 | Redis | - | Distributed agent task state and cross-instance stop signals (Redisson) |
 | MinIO | 8.6.0 | Object storage service: stores user-uploaded files, generated PPT files, images, and other binary data |
 | PgVector | - | Vector storage for file Q&A, stores chunked content vectors of large files |
@@ -155,11 +205,9 @@ See [`frontend/README.md`](frontend/README.md) for more frontend details.
 | Streaming Processing | Reactor | - | SSE streaming output and agent task lifecycle management |
 | Frontend | React + Vite | 19 / 6 | Web UI with zh-CN / en-US support |
 
-## ⭐ Star History
+## Project Origin
 
-Thank you to everyone who has starred this project! Your recognition is our motivation for continuous improvement.
-
-[![Star History Chart](https://api.star-history.com/svg?repos=RayzCoding/GenChat&type=Date)](https://star-history.com/#RayzCoding/GenChat&Date)
+GenChat-X preserves the source branch's commit history and credits from [GenChat](https://github.com/RayzCoding/GenChat). No new remote was attached at extraction time; verify the destination with `git remote -v` before the first push. The original repository's Stars, Forks, and Issues do not represent this project.
 
 ---
 

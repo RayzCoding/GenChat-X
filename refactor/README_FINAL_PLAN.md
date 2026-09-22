@@ -1,4 +1,6 @@
-# GenChat v2.0 + Foundation Framework 最终方案导航
+# GenChat-X + agent-foundation 最终方案导航
+
+> 本目录保留原 GenChat 重构方案的历史背景。业务应用现已从 `refactor/agent-foundation` 分支独立为 GenChat-X；框架 agent-foundation 继续独立维护。方案版本、排期和预期指标不等同于当前实现或发布版本；当前项目入口见 [README](../README.md)，拆分边界见 [项目独立说明](../docs/project-independence.md)。
 
 **状态**: ✅ 完成  
 **发布日期**: 2024年8月11日  
@@ -9,12 +11,12 @@
 
 ### 1️⃣ FINAL_ARCHITECTURE_DESIGN.md ⭐⭐⭐
 
-**GenChat v2.0 完整架构方案**（优先阅读）
+**GenChat-X 完整架构方案**（优先阅读）
 
 ```
 内容：
 ├─ 核心决策（为什么选择框架包方案）
-├─ 问题诊断（GenChat v1.0 的症状）
+├─ 问题诊断（原 GenChat v1.0 的历史基线）
 ├─ 整体架构（业务代码 + Framework 包的分离）
 ├─ 4阶段实施计划（12周）
 ├─ 关键改造设计（5个核心改造）
@@ -48,7 +50,7 @@
 ├─ 5个使用场景示例
 ├─ 完全剥离业务代码的约束
 ├─ 发布与依赖形式（如何当做 Maven 包使用）
-├─ 与 GenChat 的集成流程
+├─ 与 GenChat-X 的集成流程
 └─ 与 LangGraph 的对比分析
 
 适用人群：
@@ -114,7 +116,7 @@ Week 10-12（业务迁移）
 【必读】2小时完整学习
 FINAL_ARCHITECTURE_DESIGN.md → 架构理论
 FOUNDATION_FRAMEWORK_DESIGN.md → 实现细节
-ARCHITECTURE_DETAILS.md → AgentX 参考
+AgentX 历史参考（原 `ARCHITECTURE_DETAILS.md`，本仓库未包含）
 
 输出：API 文档、迁移指南、使用示例
 ```
@@ -126,7 +128,7 @@ ARCHITECTURE_DETAILS.md → AgentX 参考
 ### 架构关系
 
 ```
-GenChat v2.0 的三个层次：
+GenChat-X 的三个层次：
 
 应用层（业务）
 ├─ ChatAgent / FileAgent / ...
@@ -212,10 +214,10 @@ GenChat v2.0 的三个层次：
 
 ## 📖 其他参考文档
 
-### 已有参考文档（可选）
+### 历史参考文档（本仓库未包含）
 
-- `ARCHITECTURE_DETAILS.md` — AgentX 系统架构（框架参考）
-- `CAPABILITY_ANALYSIS.md` — AgentX 能力分析（深度参考）
+- `ARCHITECTURE_DETAILS.md` — 原 AgentX 系统架构参考，未随拆分迁入
+- `CAPABILITY_ANALYSIS.md` — 原 AgentX 能力分析，未随拆分迁入
 
 ### 已删除的冗余文档
 
@@ -236,7 +238,7 @@ GenChat v2.0 的三个层次：
 ## ✅ 最终方案小结
 
 ### 方案名称
-**GenChat v2.0 + agent-foundation Framework**
+**GenChat-X + agent-foundation Framework**
 
 ### 核心特点
 - ✅ 业务代码和框架代码**完全分离**
@@ -289,10 +291,10 @@ A: ✅ Framework 包完全可以开源。这是长期目标。
 **所有核心设计已完成，文档齐全，可以启动项目！**
 
 ```
-✅ FINAL_ARCHITECTURE_DESIGN.md      - GenChat v2.0 完整方案
+✅ FINAL_ARCHITECTURE_DESIGN.md      - GenChat-X 完整方案
 ✅ FOUNDATION_FRAMEWORK_DESIGN.md    - Framework 包详细设计  
-✅ ARCHITECTURE_DETAILS.md           - AgentX 架构参考
-✅ CAPABILITY_ANALYSIS.md            - AgentX 能力参考
+⚠️ ARCHITECTURE_DETAILS.md           - 历史参考，本仓库未包含
+⚠️ CAPABILITY_ANALYSIS.md            - 历史参考，本仓库未包含
 ```
 
 **下一步**：

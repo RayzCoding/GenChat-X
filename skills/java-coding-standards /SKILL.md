@@ -8,6 +8,8 @@ origin: ECC
 
 Standards for readable, maintainable Java (21+) code in Spring Boot services.
 
+This is a reusable Skill rather than a description of the GenChat-X package layout. GenChat-X currently builds and runs with Java 25 and Spring Boot 4; use Jakarta namespaces and the repository's actual Gradle configuration when applying these guidelines here.
+
 ## When to Activate
 
 - Writing or reviewing Java code in Spring Boot projects

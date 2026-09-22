@@ -1,12 +1,14 @@
-# GenChat — Project Structure
+# GenChat-X — Project Structure
 
-Base package: `com.genchat`
+Independent project root: `GenChat-X/`. The sibling `../agent-foundation` is included as a Gradle composite build, not embedded in this repository. Base package: `com.genchat` (retained for compatibility).
+
+The tree below includes historical architecture references; consult the actual source for current implementations and `refactor/` for the original migration plan.
 
 ```
 src/main/java/com/genchat/
 ├── GenChatApplication.java
 ├── agent/                         # Agent implementations
-│   ├── core/                      # ReAct engine (AbstractReactAgent, ReactRoundScheduler, …)
+│   ├── core/                      # Application-side ReAct abstractions and compatibility code
 │   ├── model/                     # Agent domain models (AgentState, RoundState, …)
 │   ├── deepresearch/              # Plan-Execute deep research pipeline
 │   │   └── model/                 # Deep-research state (OverAllState)
@@ -27,6 +29,8 @@ src/main/java/com/genchat/
 ├── common/
 │   ├── AgentStreamEvent.java      # SSE event protocol
 │   ├── Result.java                # Unified REST wrapper
+│   ├── error/                     # Error contracts and exception mapping
+│   ├── validation/                # Shared validation helpers
 │   ├── utils/JacksonJson.java     # Unified JSON helper
 │   └── prompts/                   # PromptLoader + thin Java wrappers
 ├── config/                        # Spring configuration + GenChatProperties
@@ -35,6 +39,7 @@ src/main/java/com/genchat/
 ├── converter/                     # MapStruct converters
 ├── dto/                           # API/session transport objects
 ├── entity/                        # Persistence entities
+├── foundation/                    # Foundation adapters, factories, RAG expansion, multimodal bridge
 ├── service/                       # Business services
 │   └── session/                   # SessionPayloadParser (reference / recommend)
 └── repository/                    # MyBatis-Plus repositories
@@ -50,7 +55,7 @@ src/main/resources/
 
 | Prefix | Controller | Notes |
 |--------|------------|-------|
-| `/agent/**` | AgentController | SSE streaming chat (6 agent modes) + `/agent/stop` |
+| `/agent/**` | AgentController | Unified `POST /agent/stream`, six compatibility streams, and `/agent/stop` |
 | `/agent/sessions/**` | SessionController | Session list/search/detail/delete + `/by-file/{fileId}`; returns `Result<T>` |
 | `/file/**` | FileController | Presign URL + upload/list/delete files |
 
@@ -63,8 +68,8 @@ src/main/resources/
 5. Skills assistant (`/agent/skills/stream`)
 6. Simple ReAct (`/agent/simple/stream`)
 
-Parameter naming note: `/agent/chat/stream`, `/agent/file/stream`, and `/agent/stop` use `conversationId`; `/agent/deep/stream`, `/agent/ppt/stream`, and `/agent/skills/stream` currently use `conversationsId`.
+Parameter naming note: the unified endpoint prefers `question` and `conversationId`, while accepting `query` and `conversationsId` as compatibility aliases. The mode-specific deep/PPT/Skills routes also accept the singular `conversationId`; new clients should use singular names consistently.
 
 ## Frontend
 
-React + Vite app under `frontend/`. In dev, `/agent` and `/file` proxy to `http://localhost:8081`.
+React + Vite app under `frontend/`. In dev, `/agent` and `/file` proxy to `http://localhost:8080`.
