@@ -68,11 +68,11 @@ class DeepResearchTaskExecutorTest {
 
         assertEquals(succeeds, result.success());
         assertEquals(succeeds ? 6 : 5, calls.get());
-        assertEquals(5, searches.get());
+        assertEquals(succeeds ? 5 : 4, searches.get());
         if (succeeds) {
             assertTrue(result.output().startsWith("Verified findings"));
         } else {
-            assertTrue(result.error().contains("exhausted 5 reasoning round(s)"));
+            assertTrue(result.error().contains("exhausted 4 reasoning round(s)"));
         }
     }
 

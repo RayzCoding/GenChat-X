@@ -1,7 +1,9 @@
+name: genchat-x
+
 services:
   mysql:
     image: mysql:8.0
-    container_name: genchat-mysql
+    container_name: genchat-x-mysql
     restart: unless-stopped
     ports:
       - "${MYSQL_PORT:-3306}:3306"
@@ -23,11 +25,11 @@ services:
       retries: 10
       start_period: 30s
     networks:
-      - genchat
+      - genchat-x
 
   redis:
     image: redis:7-alpine
-    container_name: genchat-redis
+    container_name: genchat-x-redis
     restart: unless-stopped
     ports:
       - "${REDIS_PORT:-6379}:6379"
@@ -40,11 +42,11 @@ services:
       timeout: 3s
       retries: 10
     networks:
-      - genchat
+      - genchat-x
 
   minio:
     image: minio/minio:latest
-    container_name: genchat-minio
+    container_name: genchat-x-minio
     restart: unless-stopped
     ports:
       - "${MINIO_API_PORT:-19000}:9000"
@@ -62,11 +64,11 @@ services:
       retries: 10
       start_period: 15s
     networks:
-      - genchat
+      - genchat-x
 
   minio-init:
     image: minio/mc:latest
-    container_name: genchat-minio-init
+    container_name: genchat-x-minio-init
     depends_on:
       minio:
         condition: service_started
@@ -79,11 +81,11 @@ services:
       mc mb --ignore-existing local/${MINIO_BUCKET:-test}
       "
     networks:
-      - genchat
+      - genchat-x
 
   pgvector:
     image: pgvector/pgvector:pg16
-    container_name: genchat-pgvector
+    container_name: genchat-x-pgvector
     restart: unless-stopped
     ports:
       - "${PGVECTOR_PORT:-5433}:5432"
@@ -102,11 +104,11 @@ services:
       retries: 10
       start_period: 20s
     networks:
-      - genchat
+      - genchat-x
 
 networks:
-  genchat:
-    name: genchat
+  genchat-x:
+    name: genchat-x
 
 volumes:
   mysql-data:

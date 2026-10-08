@@ -23,6 +23,9 @@ GenChat-X 是从 [GenChat](https://github.com/RayzCoding/GenChat) 的 `refactor/
 - 🔧 **开发者友好**：基于 Spring Boot 生态，提供清晰的 REST / SSE 接口与可外部化配置
 - 📦 **开箱即用**：预置会话管理、流式中断、Flyway 迁移等企业级实践，配套 Vite + React 前端
 - ✅ **可靠结构化输出**：PPT、深度研究和推荐问题使用 Foundation JSON Schema、业务校验与有限修复，失败不会降级为伪造 DTO
+<p>
+  <a href="images/tech.png"><img src="images/tech.png" alt="技术架构图" width="100%" /></a>
+</p>
 
 ## 🔥 核心功能
 
@@ -31,7 +34,9 @@ GenChat-X 是从 [GenChat](https://github.com/RayzCoding/GenChat) 的 `refactor/
 - **结构化输出**：四段式交互设计（思考过程→回答正文→参考来源→推荐问题）
 - **流式响应控制**：支持实时流式输出和智能中断控制
 - **信息可追溯**：所有回答附带权威参考来源，确保信息可靠性
-
+<p>
+  <a href="images/ai-chat-0.png"><img src="images/ai-chat-0.png" alt="智能联网对话页面-0" width="100%" /></a>
+</p>
 <p>
   <a href="images/ai-chat-1.png"><img src="images/ai-chat-1.png" alt="智能联网对话页面-1" width="100%" /></a>
 </p>
@@ -52,9 +57,6 @@ GenChat-X 是从 [GenChat](https://github.com/RayzCoding/GenChat) 的 `refactor/
 <p>
   <a href="images/file-qa-2.png"><img src="images/file-qa-2.png" alt="文件问答页面-2" width="100%" /></a>
 </p>
-<p>
-  <a href="images/file-qa-3.png"><img src="images/file-qa-3.png" alt="文件问答页面-3" width="100%" /></a>
-</p>
 <p><em>上传文档后可进行多轮追问，结合语义检索与多模态解析，提升长文档与图片内容理解效率。</em></p>
 
 ### 📊 智能文档生成
@@ -66,15 +68,6 @@ GenChat-X 是从 [GenChat](https://github.com/RayzCoding/GenChat) 的 `refactor/
 - **智能状态管理**：从需求澄清到成品输出的全流程状态控制
 - **自动配图生成**：集成文生图服务，丰富文档视觉效果
 
-<p>
-  <a href="images/ppt-1.png"><img src="images/ppt-1.png" alt="PPT 生成功能页面-1" width="100%" /></a>
-</p>
-<p>
-  <a href="images/ppt-2.png"><img src="images/ppt-2.png" alt="PPT 生成功能页面-2" width="100%" /></a>
-</p>
-<p>
-  <a href="images/ppt-3.png"><img src="images/ppt-3.png" alt="PPT 生成功能页面-3" width="100%" /></a>
-</p>
 <p><em>从需求澄清到成品导出全流程可视化，支持多种生成模式与自动配图，快速产出可编辑演示文档。</em></p>
 
 ### 🔍 深度研究分析
@@ -83,23 +76,10 @@ GenChat-X 是从 [GenChat](https://github.com/RayzCoding/GenChat) 的 `refactor/
 - **迭代优化机制**：评估-调整-再执行的循环优化策略
 - **问题自动优化**：智能丰富和优化用户原始问题表述
 
-<p>
-  <a href="images/deep-research.png"><img src="images/deep-research.png" alt="深度研究页面" width="100%" /></a>
-</p>
-<p><em>通过计划-执行闭环与并行任务调度，自动完成复杂问题拆解、资料整合与结果迭代优化。</em></p>
-
 ### 🧩 Skills 技能助手
 - **可扩展技能目录**：通过 `skills.directory` 加载自定义 Skill，支持按需组合工具能力
 - **多工具协同**：集成联网搜索、文件检索、Grep 等工具，适配复杂自动化任务
 - **流式交互**：与其他智能体一致的 SSE 流式输出与中断控制
-
-<p>
-  <a href="images/skills-1.png"><img src="images/skills-1.png" alt="Skills 页面-1" width="100%" /></a>
-</p>
-<p>
-  <a href="images/skills-2.png"><img src="images/skills-2.png" alt="Skills 页面-2" width="100%" /></a>
-</p>
-<p><em>支持按目录扩展技能与工具编排，适用于检索、分析、执行等自动化协同任务。</em></p>
 
 ## 🚀 快速开始
 

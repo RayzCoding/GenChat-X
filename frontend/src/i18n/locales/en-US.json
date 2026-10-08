@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "GenChat",
+    "name": "GenChat-X",
     "proAccount": "Pro Account"
   },
   "nav": {
@@ -113,7 +113,7 @@
     "uploadTitle": "Add more context",
     "uploadHint": "PDF, DOCX, PNG (Max 50MB)",
     "inputPlaceholder": "Ask about the documents...",
-    "poweredBy": "Powered by GenChat Engine • 128k Context Window",
+    "poweredBy": "Powered by GenChat-X Engine • 128k Context Window",
     "welcome": "Hello! I've indexed your uploaded documents. You can ask specific questions about the 2024 Market Report or the Architecture Diagram. How can I help you today?",
     "userQuestion": "What are the predictions for the second half of the year in this document?",
     "aiAnswerIntro": "According to page 42 of the 2024 Market Report:",
@@ -331,7 +331,7 @@
     "badge": "Intelligence Hub",
     "toggleSidebar": "Toggle sidebar",
     "greeting": "Hi there 👋 Glad to help",
-    "heroTitle": "I'm GenChat, your all-in-one assistant",
+    "heroTitle": "I'm GenChat-X, your all-in-one assistant",
     "heroSubtitle": "Web search · Document analysis · PPT generation · Deep research · Skills",
     "recommended": "Suggested prompts:",
     "placeholder": "Ask anything, give an instruction, or drop in a file...",

@@ -141,7 +141,8 @@ public class DeepResearchTaskExecutor {
                     """.formatted(dependencyContext, task.instruction());
 
             var simpleReactAgent = agentFactory.createSimpleReactAgent(deps.tools());
-            simpleReactAgent.setMaxRounds(deps.taskMaxRounds());
+            // Foundation reserves one tool-free finalization response after ReAct rounds.
+            simpleReactAgent.setMaxRounds(deps.taskMaxRounds() - 1);
             simpleReactAgent.setSystemPrompt(PlanExecutePrompts.EXECUTE + """
 
                     Execution budget: at most %d model responses, including the final answer.

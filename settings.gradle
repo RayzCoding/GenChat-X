@@ -1,6 +1,6 @@
-rootProject.name = 'GenChat'
+rootProject.name = 'GenChat-X'
 
-// Use local composite build for foundation refactor development.
+// GenChat-X uses the independent sibling agent-foundation project.
 includeBuild('../agent-foundation') {
 	dependencySubstitution {
 		substitute module('com.agent.foundation:agent-foundation-bom') using project(':agent-foundation-bom')

@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "GenChat",
+    "name": "GenChat-X",
     "proAccount": "Pro 账户"
   },
   "nav": {
@@ -113,7 +113,7 @@
     "uploadTitle": "添加更多上下文",
     "uploadHint": "PDF, DOCX, PNG (Max 50MB)",
     "inputPlaceholder": "询问文档相关问题...",
-    "poweredBy": "Powered by GenChat Engine • 128k Context Window",
+    "poweredBy": "Powered by GenChat-X Engine • 128k Context Window",
     "welcome": "您好！我已索引您上传的文档。您可以针对《2024市场研究报告》或《技术架构图》提出具体问题。今天我能帮您什么？",
     "userQuestion": "该文档中关于下半年的预测是什么？",
     "aiAnswerIntro": "根据《2024市场研究报告.pdf》第42页的分析，下半年的核心预测如下：",
@@ -331,7 +331,7 @@
     "badge": "智能中枢",
     "toggleSidebar": "展开/收起侧栏",
     "greeting": "你好呀 👋 很高兴为你服务",
-    "heroTitle": "我是 GenChat，你的全能智能助手",
+    "heroTitle": "我是 GenChat-X，你的全能智能助手",
     "heroSubtitle": "支持联网搜索 · 文档研读 · PPT一键生成 · 深度研究 · 丰富技能",
     "recommended": "推荐提示：",
     "placeholder": "问你想问的，或输入指令、拖入文件...",

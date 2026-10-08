@@ -26,6 +26,10 @@ It has its own Git repository with `main` as its main branch and does not depend
 - 📦 **Out-of-the-Box**: Session management, streaming stop, Flyway migrations, and a Vite + React frontend included
 - ✅ **Reliable Structured Output**: PPT, deep-research, and recommendation flows use Foundation JSON Schema, business validation, and bounded repair instead of fabricated fallback DTOs
 
+<p>
+  <a href="images/tech.png"><img src="images/tech.png" alt="Architecture diagram" width="100%" /></a>
+</p>
+
 ## 🔥 Core Features
 
 ### 🌐 Intelligent Web-Connected Conversation
@@ -34,6 +38,9 @@ It has its own Git repository with `main` as its main branch and does not depend
 - **Streaming Response Control**: Supports real-time streaming output and intelligent interruption control
 - **Information Traceability**: All answers include authoritative reference sources ensuring information reliability
 
+<p>
+  <a href="images/ai-chat-0.png"><img src="images/ai-chat-0.png" alt="Web conversation page - 0" width="100%" /></a>
+</p>
 <p>
   <a href="images/ai-chat-1.png"><img src="images/ai-chat-1.png" alt="Web conversation page - 1" width="100%" /></a>
 </p>
@@ -54,9 +61,6 @@ It has its own Git repository with `main` as its main branch and does not depend
 <p>
   <a href="images/file-qa-2.png"><img src="images/file-qa-2.png" alt="File Q&A page - 2" width="100%" /></a>
 </p>
-<p>
-  <a href="images/file-qa-3.png"><img src="images/file-qa-3.png" alt="File Q&A page - 3" width="100%" /></a>
-</p>
 <p><em>Upload files and continue multi-turn Q&A with semantic retrieval and multimodal understanding for dense content.</em></p>
 
 ### 📊 Intelligent Document Generation
@@ -68,40 +72,17 @@ It has its own Git repository with `main` as its main branch and does not depend
 - **Intelligent State Management**: Full-process state control from requirement clarification to final output
 - **Automatic Image Generation**: Integrates text-to-image services to enrich document visual effects
 
-<p>
-  <a href="images/ppt-1.png"><img src="images/ppt-1.png" alt="PPT generation page - 1" width="100%" /></a>
-</p>
-<p>
-  <a href="images/ppt-2.png"><img src="images/ppt-2.png" alt="PPT generation page - 2" width="100%" /></a>
-</p>
-<p>
-  <a href="images/ppt-3.png"><img src="images/ppt-3.png" alt="PPT generation page - 3" width="100%" /></a>
-</p>
-<p><em>From requirement clarification to export, generate editable presentations with multiple modes and automatic visuals.</em></p>
-
 ### 🔍 Deep Research Analysis
 - **Intelligent Planning and Execution**: Automatically decomposes complex problems based on Plan-Execute pattern
 - **Parallel Processing Optimization**: Multi-task parallel execution significantly improves research efficiency
 - **Iterative Optimization Mechanism**: Evaluation-Adjustment-Re-execution loop optimization strategy
 - **Automatic Problem Optimization**: Intelligently enriches and optimizes user's original problem statements
 
-<p>
-  <a href="images/deep-research.png"><img src="images/deep-research.png" alt="Deep research page" width="100%" /></a>
-</p>
-<p><em>Use a plan-execute loop with parallel tasks to decompose complex topics, synthesize evidence, and iterate results.</em></p>
-
 ### 🧩 Skills Assistant
 - **Extensible Skill Directory**: Load custom skills via `skills.directory` and compose tool capabilities on demand
 - **Multi-tool Collaboration**: Integrates web search, file retrieval, Grep, and more for complex automation tasks
 - **Streaming Interaction**: Same SSE streaming output and stop control as other agents
 
-<p>
-  <a href="images/skills-1.png"><img src="images/skills-1.png" alt="Skills page - 1" width="100%" /></a>
-</p>
-<p>
-  <a href="images/skills-2.png"><img src="images/skills-2.png" alt="Skills page - 2" width="100%" /></a>
-</p>
-<p><em>Extend custom skills by directory and orchestrate tools for robust search, analysis, and automation workflows.</em></p>
 
 ## 🚀 Quick Start
 

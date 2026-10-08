@@ -36,6 +36,16 @@ public final class ToolCallbackAwareChatModelAdapter implements ChatModelAdapter
     }
 
     @Override
+    public ReasoningDecision reasonFinal(List<Message> messages) {
+        return delegate.reasonFinal(messages);
+    }
+
+    @Override
+    public Flux<ReasoningStreamChunk> reasonFinalStream(List<Message> messages) {
+        return delegate.reasonFinalStream(messages);
+    }
+
+    @Override
     public ReasoningDecision reasonStructured(List<Message> messages, String schema, boolean nativeOutput) {
         return delegate.reasonStructured(messages, schema, nativeOutput);
     }
